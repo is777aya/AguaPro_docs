@@ -1121,81 +1121,64 @@ function initVentaDia(){
 }
 
 function renderPDVVentaCards(){
-  const cont = EL('pdv-venta-cards'); if(!cont) return;
-  if(!cache.pdvs.length){
-    cont.innerHTML='<div style="text-align:center;padding:28px;color:var(--text3);font-size:13px">Sin PDV registrados. Ve al módulo Mapa PDV para agregar.</div>';
-    return;
-  }
-  const precioGlobal = parseFloat(EL('vd-precio-global')?.value)||0.5;
-
-  cont.innerHTML = cache.pdvs.map(pdv => {
-    const ses = ventaSession[pdv.id] || {};
-    const qty = ses.qty || 0;
-    const precio = ses.precio || precioGlobal;
-    const total = qty * precio;
-    const saved = ses.saved || false;
-    const avatar = pdv.foto
-      ? `<img src="${pdv.foto}" style="width:100%;height:100%;object-fit:cover">`
-      : (pdv.initials || '?');
-
-    return `<div style="background:${saved?'rgba(0,245,147,.05)':' var(--card)'};border:1.5px solid ${saved?'rgba(0,245,147,.35)':'var(--border)'};border-radius:var(--r);padding:14px;margin-bottom:10px;transition:border .2s">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-        <div style="width:42px;height:42px;border-radius:10px;overflow:hidden;flex-shrink:0;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:var(--accent);border:1px solid var(--border)">${avatar}</div>
+  const cont=EL('pdv-venta-cards');if(!cont)return;
+  if(!cache.pdvs.length){cont.innerHTML='<div style="text-align:center;padding:28px;color:var(--text3);font-size:13px">Sin PDV registrados. Ve al m\u00f3dulo Mapa PDV para agregar.</div>';return;}
+  const pg=parseFloat(EL('vd-precio-global')?.value)||0.5;
+  if(!EL('no-spin')){const s=document.createElement('style');s.id='no-spin';s.textContent='input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}input[type=number]{-moz-appearance:textfield}';document.head.appendChild(s);}
+  cont.innerHTML=cache.pdvs.map(pdv=>{
+    const ses=ventaSession[pdv.id]||{};
+    const qty=ses.qty||0;
+    const precio=ses.precio||pg;
+    const saved=ses.saved||false;
+    const av=pdv.foto?`<img src="${pdv.foto}" style="width:100%;height:100%;object-fit:cover">`:(pdv.initials||'?');
+    const bord=saved?'rgba(0,245,147,.4)':'var(--border)';
+    const bg=saved?'rgba(0,245,147,.05)':'var(--card)';
+    const ib=qty>0?'var(--accent)':'var(--border2)';
+    const ic=qty>0?'var(--accent)':'var(--text3)';
+    const bs=qty>0?'background:linear-gradient(135deg,var(--accent),var(--water));color:#020d18;font-weight:800;border:none':'background:var(--bg3);color:var(--text3);border:1px solid var(--border);opacity:.45;cursor:not-allowed';
+    const bl=saved?'&#8635; Actualizar':'&#128167; Guardar';
+    return `<div id="vcard-wrap-${pdv.id}" style="background:${bg};border:1.5px solid ${bord};border-radius:14px;padding:14px;margin-bottom:10px;transition:all .25s">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+        <div style="width:44px;height:44px;border-radius:10px;overflow:hidden;flex-shrink:0;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:var(--accent);border:1px solid var(--border)">${av}</div>
         <div style="flex:1;min-width:0">
           <div style="font-weight:800;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${pdv.biz_name}</div>
-          <div style="font-size:11px;color:var(--text2);font-family:var(--mono)">${pdv.owner_name} · ${pdv.dir||''}</div>
+          <div style="font-size:11px;color:var(--text2);font-family:var(--mono)">${pdv.owner_name} &middot; ${pdv.dir||''}</div>
         </div>
-        ${saved ? '<span class="badge b-green" style="flex-shrink:0">✓ Guardado</span>' : '<span class="badge b-warn" style="flex-shrink:0">Pendiente</span>'}
+        <span class="badge ${saved?'b-green':'b-warn'}" id="vcard-badge-${pdv.id}" style="flex-shrink:0">${saved?'&#10003; Guardado':'Pendiente'}</span>
       </div>
-
-      <!-- QUICK ENTRY ROW -->
+      <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:7px;text-transform:uppercase;letter-spacing:.7px">Sachet entregados</div>
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px">
+        <button onclick="stepVenta(${pdv.id},-10)" style="width:40px;height:54px;border-radius:8px;background:var(--bg3);border:1px solid var(--border2);color:var(--text2);font-size:11px;font-weight:800;cursor:pointer;flex-shrink:0;font-family:var(--mono)">-10</button>
+        <button onclick="stepVenta(${pdv.id},-1)" style="width:40px;height:54px;border-radius:8px;background:var(--bg3);border:1px solid var(--border2);color:var(--text2);font-size:24px;font-weight:800;cursor:pointer;flex-shrink:0">&#8722;</button>
+        <input type="number" id="vcard-qty-${pdv.id}" value="${qty||''}" min="0" placeholder="0" inputmode="numeric" pattern="[0-9]*" style="flex:1;height:54px;background:var(--bg3);border:2.5px solid ${ib};border-radius:9px;color:${ic};font-family:var(--mono);font-size:30px;font-weight:800;text-align:center;outline:none;transition:all .2s;padding:0;min-width:0" oninput="onInputVenta(${pdv.id},this)" onfocus="this.select()">
+        <button onclick="stepVenta(${pdv.id},1)" style="width:40px;height:54px;border-radius:8px;background:var(--bg3);border:1px solid var(--border2);color:var(--accent);font-size:24px;font-weight:800;cursor:pointer;flex-shrink:0">+</button>
+        <button onclick="stepVenta(${pdv.id},10)" style="width:40px;height:54px;border-radius:8px;background:var(--bg3);border:1px solid var(--border2);color:var(--text2);font-size:11px;font-weight:800;cursor:pointer;flex-shrink:0;font-family:var(--mono)">+10</button>
+      </div>
       <div style="display:flex;align-items:center;gap:8px">
-        <div style="flex:1">
-          <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Sachet entregados</div>
-          <div style="display:flex;align-items:center;gap:6px">
-            <button class="qty-btn" onclick="changeVentaPDV(${pdv.id},-10)">−</button>
-            <button class="qty-btn" onclick="changeVentaPDV(${pdv.id},-1)" style="font-size:12px">-1</button>
-            <div style="flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r2);padding:8px;text-align:center;font-size:20px;font-weight:800;font-family:var(--mono);color:${qty>0?'var(--accent)':'var(--text3)'}" id="vcard-qty-${pdv.id}">${qty}</div>
-            <button class="qty-btn" onclick="changeVentaPDV(${pdv.id},1)" style="font-size:12px">+1</button>
-            <button class="qty-btn" onclick="changeVentaPDV(${pdv.id},10)">+</button>
-          </div>
+        <div style="background:var(--bg3);border-radius:9px;padding:10px 13px;flex:1;min-width:0">
+          <div style="font-size:10px;color:var(--text3);font-family:var(--mono)">TOTAL A COBRAR</div>
+          <div id="vcard-total-${pdv.id}" style="font-size:22px;font-weight:800;font-family:var(--mono);color:var(--success)">${fmtBs(qty*precio)}</div>
+          <div style="font-size:10px;color:var(--text3);font-family:var(--mono)">@ Bs.${precio.toFixed(2)} / sachet</div>
         </div>
-        <div style="text-align:right;flex-shrink:0">
-          <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Total</div>
-          <div style="font-size:18px;font-weight:800;font-family:var(--mono);color:var(--success)" id="vcard-total-${pdv.id}">${fmtBs(total)}</div>
-          <div style="font-size:10px;color:var(--text3);font-family:var(--mono)">@Bs.${precio.toFixed(2)}/u</div>
+        <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
+          <button class="btn btn-ghost btn-sm" style="font-size:11px" onclick="openVentaPDV(${pdv.id})">&#9881; Detalle</button>
+          <button id="vcard-btn-${pdv.id}" class="btn btn-sm" style="font-size:12px;padding:9px 12px;${bs}" onclick="guardarVentaPDV(${pdv.id})" ${qty>0?'':'disabled'}>${bl}</button>
         </div>
-      </div>
-
-      <!-- ACTION BUTTONS -->
-      <div style="display:flex;gap:7px;margin-top:10px">
-        <button class="btn btn-ghost btn-sm" style="flex:1;font-size:11px" onclick="openVentaPDV(${pdv.id})">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-          Detalle
-        </button>
-        ${qty > 0
-          ? `<button class="btn btn-water btn-sm" style="flex:2;font-size:12px" onclick="guardarVentaPDV(${pdv.id})">
-              ${saved ? '↻ Actualizar' : '✓ Guardar venta'}
-             </button>`
-          : `<button class="btn btn-ghost btn-sm" style="flex:2;font-size:12px;opacity:.5" disabled>Sin cantidad</button>`
-        }
       </div>
     </div>`;
   }).join('');
-
   updateVentaDiaCounters();
 }
 
-function changeVentaPDV(pdvId, delta){
-  if(!ventaSession[pdvId]) ventaSession[pdvId] = { qty:0, precio:parseFloat(EL('vd-precio-global')?.value)||0.5, pago:'efectivo', notas:'', saved:false };
-  ventaSession[pdvId].qty = Math.max(0, (ventaSession[pdvId].qty||0) + delta);
-  ventaSession[pdvId].saved = false; // mark as unsaved on change
-  // Update card inline
-  const qEl = EL('vcard-qty-'+pdvId); const tEl = EL('vcard-total-'+pdvId);
-  if(qEl){ qEl.textContent = ventaSession[pdvId].qty; qEl.style.color = ventaSession[pdvId].qty>0?'var(--accent)':'var(--text3)'; }
-  if(tEl) tEl.textContent = fmtBs(ventaSession[pdvId].qty * ventaSession[pdvId].precio);
-  updateVentaDiaCounters();
+function stepVenta(pdvId, delta){
+  const inputEl = EL('vcard-qty-'+pdvId); if(!inputEl) return;
+  const current = parseInt(inputEl.value)||0;
+  const newVal = Math.max(0, current + delta);
+  inputEl.value = newVal;
+  onInputVenta(pdvId, inputEl);
 }
+// Keep old name as alias for any remaining references
+function changeVentaPDV(pdvId, delta){ stepVenta(pdvId, delta); }
 
 function updateVentaDiaCounters(){
   let totalDia=0, sachetsDia=0, pdvsOk=0;
