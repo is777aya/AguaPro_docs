@@ -243,6 +243,25 @@ textarea.finput{resize:vertical;min-height:70px;line-height:1.5}
 .rh-stop{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);position:relative}
 .rh-stop:last-child{border-bottom:none}
 .rh-stop-num{width:20px;height:20px;border-radius:50%;background:rgba(0,180,255,.15);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:var(--accent);flex-shrink:0;font-family:var(--mono)}
+
+/* LIVE LOCATION */
+.live-panel{background:linear-gradient(135deg,rgba(0,180,255,.12),rgba(6,214,245,.06));border:1px solid var(--border2);border-radius:var(--r);padding:13px 14px;margin-bottom:12px;position:relative;overflow:hidden}
+.live-panel::before{content:'';position:absolute;top:-30%;right:-10%;width:120px;height:120px;background:radial-gradient(circle,rgba(0,180,255,.12),transparent 70%);pointer-events:none}
+.live-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(0,245,147,.12);border:1px solid rgba(0,245,147,.3);color:var(--success);font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;font-family:var(--mono);margin-bottom:8px}
+.live-badge-dot{width:6px;height:6px;border-radius:50%;background:var(--success);animation:blink 1.2s infinite}
+.live-coords{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--text);margin-bottom:3px}
+.live-acc{font-size:11px;color:var(--text2);font-family:var(--mono)}
+.live-speed{font-size:11px;color:var(--water);font-family:var(--mono);margin-top:2px}
+.pdv-nav-card{background:var(--card2);border:1px solid var(--border);border-radius:var(--r);padding:13px;margin-bottom:9px;display:flex;align-items:center;gap:11px;cursor:pointer;transition:border-color .2s}
+.pdv-nav-card:active{border-color:var(--accent)}
+.pdv-nav-card.nearest{border-color:rgba(0,245,147,.5);background:rgba(0,245,147,.04)}
+.pdv-nav-num{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--water));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#020d18;flex-shrink:0}
+.pdv-nav-num.nearest{background:linear-gradient(135deg,var(--success),#00b4ff)}
+.dist-badge{font-size:12px;font-weight:800;font-family:var(--mono);padding:4px 9px;border-radius:8px;flex-shrink:0}
+.dist-near{background:rgba(0,245,147,.12);color:var(--success)}
+.dist-mid{background:rgba(0,180,255,.12);color:var(--accent)}
+.dist-far{background:rgba(255,184,48,.1);color:var(--warn)}
+.arrow-icon{font-size:18px;flex-shrink:0;transition:transform .3s}
 ::-webkit-scrollbar{width:4px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
@@ -398,17 +417,28 @@ textarea.finput{resize:vertical;min-height:70px;line-height:1.5}
 
 <!-- ===== PANTALLA 2: MAPA PDV ===== -->
 <div class="screen" id="screen-mapa">
-  <div class="sec-header"><div class="sec-title">Mapa de PDV</div><div class="sec-sub">Puntos de venta georeferenciados</div></div>
-  <div id="osm-map"></div>
-  <div class="gps-bar" style="margin-bottom:12px">
-    <div class="gps-led" id="gps-led"></div>
-    <div style="flex:1"><div class="gps-coord" id="gps-coord">Sin GPS activo</div><div class="gps-acc" id="gps-acc">Presiona Ubicar para obtener posición</div></div>
-    <button class="btn btn-sm btn-ghost" onclick="getGPS()">Ubicar</button>
+  <div class="sec-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <div><div class="sec-title">Mapa de PDV</div><div class="sec-sub">Ubicación en tiempo real</div></div>
+    <button id="live-btn" class="btn btn-sm btn-ghost" onclick="toggleLiveTracking()" style="font-size:12px">
+      📡 Activar seguimiento
+    </button>
   </div>
-  <!-- RUTA -->
-  <div class="tabs">
+
+  <!-- PANEL UBICACIÓN EN TIEMPO REAL -->
+  <div class="live-panel" id="live-panel" style="display:none">
+    <div class="live-badge"><div class="live-badge-dot"></div>EN VIVO</div>
+    <div class="live-coords" id="live-coords">Obteniendo posición...</div>
+    <div class="live-acc" id="live-acc">Precisión: —</div>
+    <div class="live-speed" id="live-speed"></div>
+  </div>
+
+  <div id="osm-map"></div>
+
+  <!-- TABS -->
+  <div class="tabs" style="margin-top:12px">
     <div class="tab active" onclick="switchTab(this,'tm-ruta')">Ruta del día</div>
-    <div class="tab" onclick="switchTab(this,'tm-historial');renderRouteHistory()">Historial rutas</div>
+    <div class="tab" onclick="switchTab(this,'tm-nav');renderNavList()">Navegación</div>
+    <div class="tab" onclick="switchTab(this,'tm-historial');renderRouteHistory()">Historial</div>
   </div>
   <div id="tm-ruta">
     <div class="card" id="route-card">
@@ -421,6 +451,14 @@ textarea.finput{resize:vertical;min-height:70px;line-height:1.5}
     <button class="btn btn-water btn-full" style="margin-bottom:12px" onclick="openModal('modal-pdv')">+ Registrar nuevo PDV</button>
     <div id="pdv-list-map"><div style="text-align:center;padding:24px;color:var(--text3);font-size:13px">Sin puntos registrados</div></div>
   </div>
+  <!-- TAB NAVEGACIÓN -->
+  <div id="tm-nav" style="display:none">
+    <div style="font-size:11px;color:var(--text2);font-family:var(--mono);margin-bottom:10px;padding:8px 10px;background:var(--bg3);border-radius:var(--r2)">
+      PDVs ordenados por distancia desde tu posición actual. Activa el seguimiento para actualizar en tiempo real.
+    </div>
+    <div id="nav-list"><div style="text-align:center;padding:24px;color:var(--text3);font-size:13px">Activa el seguimiento para ver distancias</div></div>
+  </div>
+
   <div id="tm-historial" style="display:none">
     <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center">
       <input type="date" class="finput" id="rh-fecha" style="flex:1">
@@ -832,7 +870,13 @@ function showLoad(msg='Cargando...'){EL('loading-msg').textContent=msg;EL('loadi
 function hideLoad(){EL('loading-overlay').classList.remove('show');}
 function dot(s){const d=EL('sync-dot');if(d)d.className='sync-dot '+s;}
 
-function goScreen(id,idx){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));EL(id).classList.add('active');document.querySelectorAll('.nav-btn').forEach((b,i)=>b.classList.toggle('active',i===idx));}
+function goScreen(id,idx){
+  // Stop live tracking when leaving map
+  if(id!=='screen-mapa' && liveActive) stopLiveTracking();
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  EL(id).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach((b,i)=>b.classList.toggle('active',i===idx));
+}
 function switchTab(el,tabId){const parent=el.closest('.screen')||el.closest('.modal')||document.body;el.parentElement.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');
 // find all [id^=tab] or matching siblings
 const base=el.parentElement.parentElement;base.querySelectorAll('[id^="t"]').forEach(t=>{if(t.id&&t.id!==el.id&&!t.classList.contains('tab')&&!t.classList.contains('tabs'))t.style.display='none';});
@@ -844,7 +888,172 @@ function closeModalOut(e,id){if(e.target===e.currentTarget)closeModal(id);}
 // ============================================================
 // GPS
 // ============================================================
-function getGPS(){if(!navigator.geolocation)return toast('GPS no disponible');EL('gps-led').classList.add('on');navigator.geolocation.getCurrentPosition(pos=>{EL('gps-coord').textContent=pos.coords.latitude.toFixed(5)+', '+pos.coords.longitude.toFixed(5);EL('gps-acc').textContent='±'+Math.round(pos.coords.accuracy)+'m';if(osmMap)osmMap.setView([pos.coords.latitude,pos.coords.longitude],15);},()=>toast('No se pudo obtener GPS'),{enableHighAccuracy:true});}
+// ============================================================
+// LIVE LOCATION TRACKING
+// ============================================================
+let liveWatchId   = null;   // navigator.geolocation.watchPosition id
+let liveMarker    = null;   // Leaflet marker for current position
+let liveCircle    = null;   // accuracy circle
+let liveHeading   = null;   // last known heading
+let myLat         = null;
+let myLng         = null;
+let liveActive    = false;
+
+function toggleLiveTracking(){
+  if(liveActive) stopLiveTracking();
+  else           startLiveTracking();
+}
+
+function startLiveTracking(){
+  if(!navigator.geolocation) return toast('GPS no disponible en este dispositivo', true);
+  liveActive = true;
+  // Update button
+  const btn = EL('live-btn');
+  if(btn){ btn.textContent='⏹ Detener seguimiento'; btn.style.background='rgba(255,69,96,.15)'; btn.style.color='var(--danger)'; btn.style.borderColor='rgba(255,69,96,.35)'; }
+  EL('live-panel').style.display = '';
+  EL('live-coords').textContent  = 'Obteniendo posición...';
+  if(!osmMap) initMap();
+  liveWatchId = navigator.geolocation.watchPosition(
+    onLivePosition,
+    err => { toast('GPS: '+err.message, true); stopLiveTracking(); },
+    { enableHighAccuracy:true, maximumAge:3000, timeout:10000 }
+  );
+  toast('📡 Seguimiento en tiempo real activado');
+}
+
+function stopLiveTracking(){
+  liveActive = false;
+  if(liveWatchId !== null){ navigator.geolocation.clearWatch(liveWatchId); liveWatchId=null; }
+  if(liveMarker)  { liveMarker.remove();  liveMarker=null;  }
+  if(liveCircle)  { liveCircle.remove();  liveCircle=null;  }
+  const btn = EL('live-btn');
+  if(btn){ btn.textContent='📡 Activar seguimiento'; btn.style.background=''; btn.style.color=''; btn.style.borderColor=''; }
+  EL('live-panel').style.display = 'none';
+  toast('Seguimiento detenido');
+}
+
+function onLivePosition(pos){
+  myLat = pos.coords.latitude;
+  myLng = pos.coords.longitude;
+  const acc   = Math.round(pos.coords.accuracy);
+  const speed = pos.coords.speed;
+  liveHeading = pos.coords.heading;
+
+  // Update panel
+  EL('live-coords').textContent = myLat.toFixed(6)+', '+myLng.toFixed(6);
+  EL('live-acc').textContent    = 'Precisión: ±'+acc+'m';
+  const sEl = EL('live-speed');
+  if(sEl) sEl.textContent = speed!=null&&speed>=0 ? 'Velocidad: '+Math.round(speed*3.6)+' km/h' : '';
+
+  if(!osmMap) return;
+
+  // Animated arrow icon for current position
+  const headingDeg = (liveHeading != null && !isNaN(liveHeading)) ? liveHeading : 0;
+  const meIcon = L.divIcon({
+    className:'',
+    html:`<div style="position:relative;width:28px;height:28px">
+      <div style="position:absolute;inset:0;border-radius:50%;background:rgba(0,245,147,.25);animation:pulse-ring 1.5s infinite"></div>
+      <div style="position:absolute;inset:4px;border-radius:50%;background:#00f593;border:2.5px solid #020d18;box-shadow:0 0 10px rgba(0,245,147,.8);display:flex;align-items:center;justify-content:center">
+        <div style="width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-bottom:8px solid #020d18;transform:rotate(${headingDeg}deg)"></div>
+      </div>
+    </div>`,
+    iconSize:[28,28], iconAnchor:[14,14]
+  });
+
+  if(liveMarker) liveMarker.setLatLng([myLat,myLng]).setIcon(meIcon);
+  else           liveMarker = L.marker([myLat,myLng],{icon:meIcon,zIndexOffset:1000}).addTo(osmMap).bindPopup('<div style="color:#cce8ff;font-family:Syne,sans-serif;font-weight:700">📍 Mi posición actual</div>');
+
+  // Accuracy circle
+  if(liveCircle) liveCircle.setLatLng([myLat,myLng]).setRadius(acc);
+  else           liveCircle = L.circle([myLat,myLng],{radius:acc,color:'#00f593',fillColor:'#00f593',fillOpacity:.06,weight:1}).addTo(osmMap);
+
+  // Pan map smoothly
+  osmMap.panTo([myLat,myLng],{animate:true, duration:0.5});
+
+  // Refresh nav list if visible
+  const navTab = EL('tm-nav');
+  if(navTab && navTab.style.display!=='none') renderNavList();
+}
+
+// Helpers
+function degToRad(d){ return d*Math.PI/180; }
+function haversineKm(lat1,lng1,lat2,lng2){
+  const R=6371, dLat=degToRad(lat2-lat1), dLng=degToRad(lng2-lng1);
+  const a=Math.sin(dLat/2)**2+Math.cos(degToRad(lat1))*Math.cos(degToRad(lat2))*Math.sin(dLng/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+function bearingDeg(lat1,lng1,lat2,lng2){
+  const dLng=degToRad(lng2-lng1);
+  const y=Math.sin(dLng)*Math.cos(degToRad(lat2));
+  const x=Math.cos(degToRad(lat1))*Math.sin(degToRad(lat2))-Math.sin(degToRad(lat1))*Math.cos(degToRad(lat2))*Math.cos(dLng);
+  return ((Math.atan2(y,x)*180/Math.PI)+360)%360;
+}
+function fmtDist(km){
+  if(km<1) return Math.round(km*1000)+'m';
+  return km.toFixed(1)+'km';
+}
+function compassArrow(bearing){
+  // CSS rotation based on bearing relative to device heading
+  const rel = liveHeading!=null ? ((bearing-liveHeading+360)%360) : bearing;
+  return `<div style="font-size:20px;transform:rotate(${rel}deg);transition:transform .4s;display:inline-block">➤</div>`;
+}
+
+// NAV LIST — PDVs sorted by distance from current position
+function renderNavList(){
+  const el = EL('nav-list'); if(!el) return;
+  if(!cache.pdvs.length){ el.innerHTML='<div style="text-align:center;padding:24px;color:var(--text3);font-size:13px">Sin PDV registrados</div>'; return; }
+  if(myLat===null){ el.innerHTML='<div style="text-align:center;padding:24px;color:var(--text3);font-size:13px">Activa el seguimiento para ver distancias en tiempo real</div>'; return; }
+
+  const pdvsConGPS = cache.pdvs.filter(p=>p.lat&&p.lng).map(pdv=>{
+    const km      = haversineKm(myLat,myLng,Number(pdv.lat),Number(pdv.lng));
+    const bearing = bearingDeg(myLat,myLng,Number(pdv.lat),Number(pdv.lng));
+    const ventaHoy = cache.ventas.some(v=>v.pdv_id===pdv.id&&new Date(v.created_at).toDateString()===today()&&v.status==='entregado');
+    return { ...pdv, km, bearing, ventaHoy };
+  }).sort((a,b)=>a.km-b.km);
+
+  const maxKm = pdvsConGPS[pdvsConGPS.length-1]?.km||1;
+
+  el.innerHTML = pdvsConGPS.map((pdv,i)=>{
+    const distClass = pdv.km<0.3?'dist-near':pdv.km<1?'dist-mid':'dist-far';
+    const nearest   = i===0;
+    const av = pdv.foto?`<img src="${pdv.foto}" style="width:100%;height:100%;object-fit:cover">`:(pdv.initials||'?');
+    // Estimated walk/drive time (assume avg 30km/h urban)
+    const minutos = Math.round(pdv.km/30*60);
+    const tiempoStr = minutos<1?'<1 min':minutos<60?minutos+' min':Math.floor(minutos/60)+'h '+( minutos%60)+'min';
+
+    return `<div class="pdv-nav-card ${nearest?'nearest':''}" onclick="focusPDV(${pdv.lat},${pdv.lng},${cache.pdvs.indexOf(pdv)})">
+      <div class="pdv-nav-num ${nearest?'nearest':''}">${i+1}</div>
+      <div style="width:34px;height:34px;border-radius:8px;overflow:hidden;flex-shrink:0;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;color:var(--accent);border:1px solid var(--border)">${av}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${pdv.biz_name}</div>
+        <div style="font-size:11px;color:var(--text2)">${pdv.owner_name}</div>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:3px">
+          <span style="font-size:10px;color:var(--text3);font-family:var(--mono)">🕐 ~${tiempoStr}</span>
+          ${pdv.ventaHoy?'<span class="badge b-green" style="font-size:9px;padding:2px 6px">✓ Visitado</span>':'<span class="badge b-warn" style="font-size:9px;padding:2px 6px">Pendiente</span>'}
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0">
+        ${compassArrow(pdv.bearing)}
+        <span class="dist-badge ${distClass}">${fmtDist(pdv.km)}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// Add pulse-ring keyframes once
+(function addRingAnim(){
+  if(EL('ring-anim')) return;
+  const s=document.createElement('style');s.id='ring-anim';
+  s.textContent='@keyframes pulse-ring{0%{transform:scale(.8);opacity:.8}100%{transform:scale(1.8);opacity:0}}';
+  document.head.appendChild(s);
+})();
+
+// Keep old getGPS for modal use
+function getGPS(){
+  if(!osmMap) return;
+  if(liveActive){ toast('Seguimiento activo — tu posición ya está en el mapa'); return; }
+  startLiveTracking();
+}
 function getGPSModal(){if(!navigator.geolocation)return toast('GPS no disponible');EL('modal-gps-led').classList.add('on');navigator.geolocation.getCurrentPosition(pos=>{modalLat=pos.coords.latitude;modalLng=pos.coords.longitude;EL('modal-gps-coord').textContent=pos.coords.latitude.toFixed(5)+', '+pos.coords.longitude.toFixed(5);EL('modal-gps-acc').textContent='±'+Math.round(pos.coords.accuracy)+'m';toast('✓ Ubicación capturada');},()=>{EL('modal-gps-led').classList.remove('on');toast('No se pudo obtener GPS');},{enableHighAccuracy:true});}
 
 // ============================================================
