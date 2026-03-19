@@ -619,9 +619,18 @@ textarea.finput{resize:vertical;min-height:70px;line-height:1.5}
     <div class="fg"><label class="flabel">Notas (opcional)</label>
       <textarea class="finput" id="mvp-notas" placeholder="Observaciones de la visita..." rows="2"></textarea>
     </div>
-    <div style="background:var(--bg3);border-radius:var(--r2);padding:12px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center">
-      <span style="font-size:13px;color:var(--text2)">Total a cobrar</span>
-      <span style="font-size:22px;font-weight:800;font-family:var(--mono);color:var(--success)" id="mvp-total">Bs. 0.00</span>
+    <div style="background:var(--bg3);border-radius:var(--r2);padding:12px;margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-size:13px;color:var(--text2)">Total a cobrar</span>
+        <span style="font-size:22px;font-weight:800;font-family:var(--mono);color:var(--success)" id="mvp-total">Bs. 0.00</span>
+      </div>
+      <div id="mvp-boni-row" style="display:none;align-items:center;gap:8px;background:rgba(255,184,48,.08);border:1px solid rgba(255,184,48,.3);border-radius:8px;padding:9px 12px">
+        <span style="font-size:20px">🎁</span>
+        <div style="flex:1">
+          <div style="font-size:12px;font-weight:800;color:var(--warn)">Bonificación: <span id="mvp-boni-qty">0</span> sachet gratis</div>
+          <div style="font-size:11px;color:var(--text2);font-family:var(--mono)">1 sachet por cada 10 paquetes</div>
+        </div>
+      </div>
     </div>
     <button class="btn btn-water btn-full" id="mvp-btn-save" onclick="saveMVPVenta()">💧 Guardar venta</button>
     <button class="btn btn-ghost btn-full" style="margin-top:8px" onclick="closeModal('modal-venta-pdv')">Cancelar</button>
@@ -704,6 +713,7 @@ create table if not exists ventas (
   fecha_entrega date,
   status text default 'entregado',
   pago text default 'efectivo',
+  bonificacion integer default 0,
   created_at timestamptz default now()
 );
 create table if not exists config (
@@ -1068,7 +1078,7 @@ function showVentaDetalle(denc){
       <div style="flex:1;background:var(--bg3);border-radius:var(--r2);padding:12px;text-align:center"><div style="font-size:22px;font-weight:800;font-family:var(--mono);color:var(--accent)">${fmtNum(pdv.sachets)}</div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-top:3px">Sachet</div></div>
     </div>
     <div class="card-title" style="margin-bottom:8px">Entregas del día</div>
-    <div class="card">${pdv.ventas.map(v=>`<div class="li"><div style="flex:1"><div style="font-size:13px;font-weight:700">${fmtNum(v.qty)} sachet · Bs.${Number(v.precio).toFixed(2)}c/u</div><div style="font-size:11px;color:var(--text2);font-family:var(--mono)">${locTime(v.created_at)}${v.notas?' · '+v.notas:''}</div></div><span class="badge b-green">${fmtBs(v.total)}</span></div>`).join('')}</div>`;
+    <div class="card">${pdv.ventas.map(v=>`<div class="li"><div style="flex:1"><div style="font-size:13px;font-weight:700">${fmtNum(v.qty)} sachet · Bs.${Number(v.precio).toFixed(2)}c/u</div>${v.bonificacion>0?`<div style="font-size:11px;color:var(--warn);font-family:var(--mono);margin-top:2px">🎁 ${v.bonificacion} sachet bonificados</div>`:''}<div style="font-size:11px;color:var(--text2);font-family:var(--mono)">${locTime(v.created_at)}${v.notas?' · '+v.notas:''}</div></div><div style="text-align:right"><span class="badge b-green">${fmtBs(v.total)}</span>${v.bonificacion>0?`<div style="font-size:10px;color:var(--warn);margin-top:3px">+${v.bonificacion} 🎁</div>`:''}</div></div>`).join('')}</div>`;
   openModal('modal-pdv-detail');
 }
 
@@ -1115,7 +1125,7 @@ function initVentaDia(){
   const ds = new Date(dt+'T00:00:00').toDateString();
   cache.ventas.filter(v => new Date(v.created_at).toDateString()===ds && v.status==='entregado' && v.pdv_id)
     .forEach(v => {
-      ventaSession[v.pdv_id] = { qty:v.qty, precio:Number(v.precio), pago:v.pago||'efectivo', notas:v.notas||'', saved:true, venta_id:v.id };
+      ventaSession[v.pdv_id] = { qty:v.qty, precio:Number(v.precio), pago:v.pago||'efectivo', notas:v.notas||'', bonificacion:v.bonificacion||Math.floor(v.qty/10), saved:true, venta_id:v.id };
     });
   renderPDVVentaCards();
 }
@@ -1159,6 +1169,10 @@ function renderPDVVentaCards(){
           <div style="font-size:10px;color:var(--text3);font-family:var(--mono)">TOTAL A COBRAR</div>
           <div id="vcard-total-${pdv.id}" style="font-size:22px;font-weight:800;font-family:var(--mono);color:var(--success)">${fmtBs(qty*precio)}</div>
           <div style="font-size:10px;color:var(--text3);font-family:var(--mono)">@ Bs.${precio.toFixed(2)} / sachet</div>
+          <div id="vcard-boni-${pdv.id}" style="margin-top:5px;display:${Math.floor(qty/10)>0?'flex':'none'};align-items:center;gap:5px;background:rgba(255,184,48,.1);border:1px solid rgba(255,184,48,.3);border-radius:6px;padding:4px 7px">
+            <span style="font-size:14px">🎁</span>
+            <span style="font-size:11px;font-weight:800;color:var(--warn);font-family:var(--mono)">${Math.floor(qty/10)} sachet bonif.</span>
+          </div>
         </div>
         <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
           <button class="btn btn-ghost btn-sm" style="font-size:11px" onclick="openVentaPDV(${pdv.id})">&#9881; Detalle</button>
@@ -1180,11 +1194,47 @@ function stepVenta(pdvId, delta){
 // Keep old name as alias for any remaining references
 function changeVentaPDV(pdvId, delta){ stepVenta(pdvId, delta); }
 
+function onInputVenta(pdvId, inputEl){
+  const val   = parseInt(inputEl.value)||0;
+  const precio = ventaSession[pdvId]?.precio || parseFloat(EL('vd-precio-global')?.value)||0.5;
+  const boni   = Math.floor(val/10);
+  if(!ventaSession[pdvId]) ventaSession[pdvId]={qty:0,precio,pago:'efectivo',notas:'',saved:false,bonificacion:0};
+  ventaSession[pdvId].qty          = Math.max(0,val);
+  ventaSession[pdvId].bonificacion = boni;
+  ventaSession[pdvId].saved        = false;
+  // Input styles
+  inputEl.style.borderColor = val>0?'var(--accent)':'var(--border2)';
+  inputEl.style.color       = val>0?'var(--accent)':'var(--text3)';
+  // Total
+  const tEl=EL('vcard-total-'+pdvId); if(tEl) tEl.textContent=fmtBs(val*precio);
+  // Bonus badge on card
+  const boniEl=EL('vcard-boni-'+pdvId);
+  if(boniEl){ boniEl.style.display=boni>0?'flex':'none'; const sp=boniEl.querySelector('span:last-child'); if(sp) sp.textContent=boni+' sachet bonif.'; }
+  // Save button
+  const btn=EL('vcard-btn-'+pdvId);
+  if(btn){
+    if(val>0){
+      btn.disabled=false;
+      btn.style.cssText='font-size:12px;padding:9px 12px;background:linear-gradient(135deg,var(--accent),var(--water));color:#020d18;font-weight:800;border:none';
+      btn.innerHTML=ventaSession[pdvId].saved?'&#8635; Actualizar':'&#128167; Guardar';
+    } else {
+      btn.disabled=true;
+      btn.style.cssText='font-size:12px;padding:9px 12px;background:var(--bg3);color:var(--text3);border:1px solid var(--border);cursor:not-allowed;opacity:.45';
+      btn.innerHTML='&#128167; Guardar';
+    }
+  }
+  // Badge
+  const badge=EL('vcard-badge-'+pdvId);
+  if(badge){ badge.className='badge b-warn'; badge.textContent='Pendiente'; }
+  updateVentaDiaCounters();
+}
+
 function updateVentaDiaCounters(){
-  let totalDia=0, sachetsDia=0, pdvsOk=0;
-  Object.values(ventaSession).forEach(s=>{ if(s.qty>0){ totalDia+=s.qty*s.precio; sachetsDia+=s.qty; pdvsOk++; } });
-  const t=EL('vdr-total-dia');const s=EL('vdr-sachets-dia');const p=EL('vdr-pdvs-ok');
+  let totalDia=0, sachetsDia=0, pdvsOk=0, boniTotal=0;
+  Object.values(ventaSession).forEach(s=>{ if(s.qty>0){ totalDia+=s.qty*s.precio; sachetsDia+=s.qty; pdvsOk++; boniTotal+=(s.bonificacion||0); } });
+  const t=EL('vdr-total-dia');const s=EL('vdr-sachets-dia');const p=EL('vdr-pdvs-ok');const b=EL('vdr-boni-dia');
   if(t)t.textContent=fmtBs(totalDia);if(s)s.textContent=fmtNum(sachetsDia);if(p)p.textContent=pdvsOk;
+  if(b){ b.textContent=fmtNum(boniTotal); const row=EL('boni-summary-row');if(row)row.style.display=boniTotal>0?'flex':'none'; }
 }
 
 // Open detail modal for a PDV
@@ -1204,25 +1254,31 @@ function openVentaPDV(pdvId){
   EL('mvp-precio').value = ses.precio||precioGlobal;
   EL('mvp-pago').value = ses.pago||'efectivo';
   EL('mvp-notas').value = ses.notas||'';
-  updateMVPTotal();
+  updateMVPTotal(); // also updates bonus display
   EL('mvp-btn-save').textContent = ses.saved ? '↻ Actualizar venta' : '💧 Guardar venta';
   openModal('modal-venta-pdv');
 }
 
 function updateMVPTotal(){
-  const q = parseFloat(EL('mvp-qty')?.value)||0;
+  const q = parseInt(EL('mvp-qty')?.value)||0;
   const p = parseFloat(EL('mvp-precio')?.value)||0;
+  const boni = Math.floor(q/10);
   const t = EL('mvp-total'); if(t) t.textContent = fmtBs(q*p);
+  const bRow = EL('mvp-boni-row');
+  const bQty = EL('mvp-boni-qty');
+  if(bRow){ bRow.style.display = boni>0?'flex':'none'; }
+  if(bQty) bQty.textContent = boni;
 }
 
 async function saveMVPVenta(){
   if(!mvpCurrentPDV) return;
-  const qty = parseInt(EL('mvp-qty').value)||0;
+  const qty    = parseInt(EL('mvp-qty').value)||0;
   const precio = parseFloat(EL('mvp-precio').value)||0.5;
-  const pago = EL('mvp-pago').value;
-  const notas = EL('mvp-notas').value;
+  const pago   = EL('mvp-pago').value;
+  const notas  = EL('mvp-notas').value;
+  const boni   = Math.floor(qty/10);
   if(qty <= 0) return toast('Ingresa una cantidad mayor a 0',true);
-  ventaSession[mvpCurrentPDV] = { qty, precio, pago, notas, saved:false };
+  ventaSession[mvpCurrentPDV] = { qty, precio, pago, notas, bonificacion:boni, saved:false };
   closeModal('modal-venta-pdv');
   await guardarVentaPDV(mvpCurrentPDV);
 }
@@ -1239,7 +1295,8 @@ async function guardarVentaPDV(pdvId){
       precio: ses.precio,
       total: ses.qty * ses.precio,
       pago: ses.pago||'efectivo',
-      notas: ses.notas||''
+      notas: ses.notas||'',
+      bonificacion: ses.bonificacion||0
     });
     if(ok){
       ventaSession[pdvId].saved = true;
@@ -1251,6 +1308,7 @@ async function guardarVentaPDV(pdvId){
   }
 
   // New venta
+  const boni = ses.bonificacion !== undefined ? ses.bonificacion : Math.floor(ses.qty/10);
   const record = {
     pdv_id: pdvId,
     pdv_name: pdv.biz_name,
@@ -1259,6 +1317,7 @@ async function guardarVentaPDV(pdvId){
     total: ses.qty * ses.precio,
     pago: ses.pago||'efectivo',
     notas: ses.notas||'',
+    bonificacion: boni,
     fecha_entrega: fecha,
     status: 'entregado'
   };
@@ -1267,7 +1326,8 @@ async function guardarVentaPDV(pdvId){
   ventaSession[pdvId] = { ...ses, saved:true, venta_id:saved.id };
   renderPDVVentaCards();
   refreshDash(); refreshStockTab();
-  toast('✓ Venta guardada — '+pdv.biz_name+': '+ses.qty+' sachet');
+  const boniMsg = boni>0 ? ` + 🎁 ${boni} bonif.` : '';
+  toast('✓ '+pdv.biz_name+': '+ses.qty+' sachet'+boniMsg);
 }
 
 // ============================================================
