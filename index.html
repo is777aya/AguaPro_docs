@@ -455,11 +455,11 @@ textarea.finput{resize:vertical;min-height:70px;line-height:1.5}
         <div class="card-title">Configurar jornada</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
           <div class="fg" style="margin-bottom:0"><label class="flabel">Fecha</label><input type="date" class="finput" id="vd-fecha-reg"></div>
-          <div class="fg" style="margin-bottom:0"><label class="flabel">Precio venta (Bs.)</label><input type="number" class="finput" id="vd-precio-global" placeholder="0.50" step="0.01" value="0.50" oninput="renderPDVVentaCards()"></div>
+          <div class="fg" style="margin-bottom:0"><label class="flabel">Precio venta (Bs.)</label><input type="number" class="finput" id="vd-precio-global" placeholder="0.40" step="0.01" value="0.40" oninput="renderPDVVentaCards()"></div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
-          <div class="fg" style="margin-bottom:0"><label class="flabel">Precio bonif. (Bs.)</label><input type="number" class="finput" id="vd-precio-boni" placeholder="0.50" step="0.01" value="0.50" oninput="renderPDVVentaCards()" title="Costo del sachet bonificado"></div>
-          <div style="background:rgba(255,184,48,.07);border:1px solid rgba(255,184,48,.2);border-radius:var(--r2);padding:9px;display:flex;align-items:center;gap:7px"><span style="font-size:18px">🎁</span><div><div style="font-size:10px;color:var(--text3);font-family:var(--mono)">1 bonif. cada 10</div><div style="font-size:11px;font-weight:700;color:var(--warn)">tienen costo</div></div></div>
+          <div class="fg" style="margin-bottom:0"><label class="flabel">Precio bonif. (Bs.)</label><input type="number" class="finput" id="vd-precio-boni" placeholder="0.40" step="0.01" value="0.40" oninput="renderPDVVentaCards()" title="Costo del sachet bonificado"></div>
+          <div style="background:rgba(255,184,48,.07);border:1px solid rgba(255,184,48,.2);border-radius:var(--r2);padding:9px;display:flex;align-items:center;gap:9px;cursor:pointer" onclick="toggleBoni()"><span style="font-size:20px">🎁</span><div style="flex:1"><div style="font-size:10px;color:var(--text3);font-family:var(--mono)">Bonificación 1:10</div><div style="font-size:11px;font-weight:800;color:var(--warn)" id="boni-toggle-label">Activa</div></div><div id="boni-toggle-switch" style="width:36px;height:20px;border-radius:10px;background:var(--warn);position:relative;transition:background .2s;flex-shrink:0"><div id="boni-toggle-thumb" style="width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:2px;left:18px;transition:left .2s"></div></div></div>
         </div>
         <div style="display:flex;gap:6px">
           <div style="flex:1;background:var(--bg3);border-radius:var(--r2);padding:9px;text-align:center">
@@ -504,7 +504,7 @@ textarea.finput{resize:vertical;min-height:70px;line-height:1.5}
       <div class="fg"><label class="flabel">Punto de Venta</label><select class="finput" id="pv-pdv"><option value="">-- Seleccionar PDV --</option></select></div>
       <div class="fg"><label class="flabel">Fecha de entrega</label><input type="date" class="finput" id="pv-fecha"></div>
       <div class="fg"><label class="flabel">Cantidad (sachet)</label><input type="number" class="finput" id="pv-qty" placeholder="0" min="1"></div>
-      <div class="fg"><label class="flabel">Precio unitario (Bs.)</label><input type="number" class="finput" id="pv-precio" placeholder="0.50" step="0.01"></div>
+      <div class="fg"><label class="flabel">Precio unitario (Bs.)</label><input type="number" class="finput" id="pv-precio" placeholder="0.40" step="0.01"></div>
       <div class="fg"><label class="flabel">Notas</label><textarea class="finput" id="pv-notas" placeholder="Instrucciones especiales..." rows="2"></textarea></div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding:11px 13px;background:var(--bg3);border-radius:var(--r2)">
         <span style="font-size:13px;color:var(--text2)">Total estimado</span>
@@ -612,7 +612,7 @@ textarea.finput{resize:vertical;min-height:70px;line-height:1.5}
       <input type="number" class="finput" id="mvp-qty" placeholder="0" min="0" oninput="updateMVPTotal()">
     </div>
     <div class="fg"><label class="flabel">Precio unitario (Bs.)</label>
-      <input type="number" class="finput" id="mvp-precio" placeholder="0.50" step="0.01" oninput="updateMVPTotal()">
+      <input type="number" class="finput" id="mvp-precio" placeholder="0.40" step="0.01" oninput="updateMVPTotal()">
     </div>
     <div class="fg"><label class="flabel">Tipo de pago</label>
       <select class="finput" id="mvp-pago">
@@ -1032,7 +1032,7 @@ function updatePVTotal(){const q=parseFloat(V('pv-qty'))||0,p=parseFloat(V('pv-p
 async function savePreVenta(){
   const pdvId=V('pv-pdv');if(!pdvId)return toast('Selecciona un PDV',true);
   const qty=parseInt(V('pv-qty'))||0;if(qty<=0)return toast('Cantidad requerida',true);
-  const precio=parseFloat(V('pv-precio'))||0.5;
+  const precio=parseFloat(V('pv-precio'))||0.4;
   const pdv=cache.pdvs.find(p=>p.id==pdvId);
   const record={pdv_id:parseInt(pdvId),pdv_name:pdv.biz_name,qty,precio,total:qty*precio,notas:V('pv-notas'),fecha_entrega:V('pv-fecha'),status:'pendiente'};
   const saved=await dbInsert('ventas',record);if(!saved)return;
@@ -1145,7 +1145,7 @@ function initVentaDia(){
 function renderPDVVentaCards(){
   const cont=EL('pdv-venta-cards');if(!cont)return;
   if(!cache.pdvs.length){cont.innerHTML='<div style="text-align:center;padding:28px;color:var(--text3);font-size:13px">Sin PDV registrados. Ve al m\u00f3dulo Mapa PDV para agregar.</div>';return;}
-  const pg=parseFloat(EL('vd-precio-global')?.value)||0.5;
+  const pg=parseFloat(EL('vd-precio-global')?.value)||0.4;
   if(!EL('no-spin')){const s=document.createElement('style');s.id='no-spin';s.textContent='input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}input[type=number]{-moz-appearance:textfield}';document.head.appendChild(s);}
   cont.innerHTML=cache.pdvs.map(pdv=>{
     const ses=ventaSession[pdv.id]||{};
@@ -1181,9 +1181,9 @@ function renderPDVVentaCards(){
           <div style="font-size:10px;color:var(--text3);font-family:var(--mono)">TOTAL A COBRAR</div>
           <div id="vcard-total-${pdv.id}" style="font-size:22px;font-weight:800;font-family:var(--mono);color:var(--success)">${fmtBs(qty*precio)}</div>
           <div style="font-size:10px;color:var(--text3);font-family:var(--mono)">@ Bs.${precio.toFixed(2)} / sachet</div>
-          <div id="vcard-boni-${pdv.id}" style="margin-top:5px;display:${Math.floor(qty/10)>0?'flex':'none'};align-items:center;gap:5px;background:rgba(255,184,48,.1);border:1px solid rgba(255,184,48,.3);border-radius:6px;padding:4px 7px">
+          <div id="vcard-boni-${pdv.id}" style="margin-top:5px;display:${boniActiva&&Math.floor(qty/10)>0?'flex':'none'};align-items:center;gap:5px;background:rgba(255,184,48,.1);border:1px solid rgba(255,184,48,.3);border-radius:6px;padding:4px 7px">
             <span style="font-size:14px">🎁</span>
-            <span style="font-size:11px;font-weight:800;color:var(--warn);font-family:var(--mono)">${Math.floor(qty/10)} sachet bonif.</span>
+            <span style="font-size:11px;font-weight:800;color:var(--warn);font-family:var(--mono)">${Math.floor(qty/10)} bonif.</span>
           </div>
         </div>
         <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
@@ -1208,7 +1208,7 @@ function changeVentaPDV(pdvId, delta){ stepVenta(pdvId, delta); }
 
 function onInputVenta(pdvId, inputEl){
   const val   = parseInt(inputEl.value)||0;
-  const precio = ventaSession[pdvId]?.precio || parseFloat(EL('vd-precio-global')?.value)||0.5;
+  const precio = ventaSession[pdvId]?.precio || parseFloat(EL('vd-precio-global')?.value)||0.4;
   const boni   = Math.floor(val/10);
   if(!ventaSession[pdvId]) ventaSession[pdvId]={qty:0,precio,pago:'efectivo',notas:'',saved:false,bonificacion:0};
   ventaSession[pdvId].qty          = Math.max(0,val);
@@ -1267,7 +1267,7 @@ function openVentaPDV(pdvId){
   const pdv = cache.pdvs.find(p=>p.id===pdvId); if(!pdv) return;
   mvpCurrentPDV = pdvId;
   const ses = ventaSession[pdvId] || {};
-  const precioGlobal = parseFloat(EL('vd-precio-global')?.value)||0.5;
+  const precioGlobal = parseFloat(EL('vd-precio-global')?.value)||0.4;
   // Set modal content
   const av = pdv.foto
     ? `<img src="${pdv.foto}" style="width:100%;height:100%;object-fit:cover;border-radius:10px">`
@@ -1288,7 +1288,7 @@ function updateMVPTotal(){
   const q     = parseInt(EL('mvp-qty')?.value)||0;
   const p     = parseFloat(EL('mvp-precio')?.value)||0;
   const pb    = parseFloat(EL('vd-precio-boni')?.value)||p; // precio bonificacion
-  const boni  = Math.floor(q/10);
+  const boni  = boniActiva ? Math.floor(q/10) : 0;
   const total = q*p;
   const costoBoni = boni*pb;
   const t = EL('mvp-total'); if(t) t.textContent = fmtBs(total);
@@ -1303,11 +1303,11 @@ function updateMVPTotal(){
 async function saveMVPVenta(){
   if(!mvpCurrentPDV) return;
   const qty       = parseInt(EL('mvp-qty').value)||0;
-  const precio    = parseFloat(EL('mvp-precio').value)||0.5;
+  const precio    = parseFloat(EL('mvp-precio').value)||0.4;
   const precio_boni = parseFloat(EL('vd-precio-boni')?.value)||precio;
   const pago      = EL('mvp-pago').value;
   const notas     = EL('mvp-notas').value;
-  const boni      = Math.floor(qty/10);
+  const boni      = boniActiva ? Math.floor(qty/10) : 0;
   const total_boni = boni*precio_boni;
   if(qty <= 0) return toast('Ingresa una cantidad mayor a 0',true);
   ventaSession[mvpCurrentPDV] = { qty, precio, precio_boni, pago, notas, bonificacion:boni, total_boni, saved:false };
@@ -1342,7 +1342,7 @@ async function guardarVentaPDV(pdvId){
   }
 
   // New venta
-  const boni = ses.bonificacion !== undefined ? ses.bonificacion : Math.floor(ses.qty/10);
+  const boni = ses.bonificacion !== undefined ? ses.bonificacion : (boniActiva ? Math.floor(ses.qty/10) : 0);
   const precioBoni = ses.precio_boni || ses.precio || 0;
   const record = {
     pdv_id: pdvId,
@@ -1367,6 +1367,23 @@ async function guardarVentaPDV(pdvId){
   toast('✓ '+pdv.biz_name+': '+ses.qty+' sachet'+boniMsg);
 }
 
+
+// ============================================================
+// BONIFICACIÓN OPCIONAL
+// ============================================================
+let boniActiva = true;
+
+function toggleBoni(){
+  boniActiva = !boniActiva;
+  const lbl   = EL('boni-toggle-label');
+  const sw    = EL('boni-toggle-switch');
+  const thumb = EL('boni-toggle-thumb');
+  if(lbl)   lbl.textContent   = boniActiva ? 'Activa' : 'Inactiva';
+  if(sw)    sw.style.background = boniActiva ? 'var(--warn)' : 'var(--text3)';
+  if(thumb) thumb.style.left    = boniActiva ? '18px' : '2px';
+  renderPDVVentaCards();
+  toast(boniActiva ? '🎁 Bonificación activada' : 'Bonificación desactivada');
+}
 // ============================================================
 // DASHBOARD
 // ============================================================
