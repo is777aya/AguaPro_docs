@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="theme-color" content="#020d18">
-<title>AguaPro — Gestión de Sachet</title>
+<title>SOMOS AGUA — Gestión de Sachet</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -233,6 +233,36 @@ textarea.finput{resize:vertical;min-height:70px;line-height:1.5}
 .offline-bar{background:rgba(255,184,48,.08);border-bottom:1px solid rgba(255,184,48,.25);color:var(--warn);font-size:11px;font-weight:700;padding:7px 14px;text-align:center;display:none;font-family:var(--mono)}
 .offline-bar.show{display:block}
 
+
+/* LOGIN */
+.login-screen{position:fixed;inset:0;background:var(--bg);z-index:600;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px}
+.login-brand{text-align:center;margin-bottom:32px}
+.login-logo{width:72px;height:72px;background:linear-gradient(135deg,var(--accent),var(--water));border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:36px;margin:0 auto 12px}
+.login-title{font-size:28px;font-weight:800;letter-spacing:-1px}
+.login-title span{color:var(--accent)}
+.login-sub{font-size:12px;color:var(--text2);margin-top:4px;font-family:var(--mono)}
+.login-card{background:var(--card);border:1px solid var(--border2);border-radius:var(--r);padding:24px;width:100%;max-width:380px}
+.login-tabs{display:flex;gap:4px;background:var(--bg3);padding:4px;border-radius:var(--r2);margin-bottom:20px}
+.login-tab{flex:1;padding:8px;text-align:center;font-size:12px;font-weight:700;cursor:pointer;border-radius:7px;color:var(--text3);transition:all .2s}
+.login-tab.active{background:var(--card2);color:var(--accent);border:1px solid var(--border)}
+.user-chip{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg3);border-radius:var(--r2);margin-bottom:8px;border:1px solid var(--border);cursor:pointer;transition:border-color .2s}
+.user-chip:active{border-color:var(--accent)}
+.user-chip-av{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--water));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#020d18;flex-shrink:0}
+.user-chip-info{flex:1}
+.user-chip-name{font-size:13px;font-weight:700}
+.user-chip-role{font-size:11px;color:var(--text2);font-family:var(--mono)}
+.topbar-user{display:flex;align-items:center;gap:7px;cursor:pointer}
+.topbar-user-av{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--water));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#020d18}
+
+/* ROUTE HISTORY */
+.rh-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:13px;margin-bottom:9px}
+.rh-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.rh-date{font-size:13px;font-weight:700;color:var(--text)}
+.rh-user{font-size:11px;color:var(--text2);font-family:var(--mono)}
+.rh-stops{display:flex;flex-direction:column;gap:0}
+.rh-stop{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);position:relative}
+.rh-stop:last-child{border-bottom:none}
+.rh-stop-num{width:20px;height:20px;border-radius:50%;background:rgba(0,180,255,.15);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:var(--accent);flex-shrink:0;font-family:var(--mono)}
 ::-webkit-scrollbar{width:4px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
@@ -244,11 +274,54 @@ textarea.finput{resize:vertical;min-height:70px;line-height:1.5}
 <div class="toast" id="toast"><span id="toast-msg"></span></div>
 <div class="offline-bar" id="offline-bar">⚡ Sin conexión — modo offline activo</div>
 
+
+<!-- ===== LOGIN SCREEN ===== -->
+<div class="login-screen" id="login-screen" style="display:none">
+  <div class="login-brand">
+    <div class="login-logo">💧</div>
+    <div class="login-title">SOMOS <span>AGUA</span></div>
+    <div class="login-sub">Sistema de gestión de sachet 400ml</div>
+  </div>
+  <div class="login-card">
+    <div class="login-tabs">
+      <div class="login-tab active" id="lt-login" onclick="switchLoginTab('login')">Iniciar sesión</div>
+      <div class="login-tab" id="lt-register" onclick="switchLoginTab('register')">Registrarse</div>
+    </div>
+
+    <!-- LOGIN FORM -->
+    <div id="lf-login">
+      <div id="saved-users-list"></div>
+      <div id="lf-manual" style="display:none">
+        <div class="fg"><label class="flabel">Correo</label><input class="finput" id="l-email" type="email" placeholder="usuario@somos.agua" autocomplete="email"></div>
+        <div class="fg"><label class="flabel">Contraseña</label><input class="finput" id="l-pass" type="password" placeholder="••••••••" autocomplete="current-password"></div>
+        <button class="btn btn-water btn-full" onclick="doLogin()">💧 Ingresar</button>
+        <button class="btn btn-ghost btn-full" style="margin-top:8px;font-size:12px" onclick="showSavedUsers()">← Volver a usuarios guardados</button>
+      </div>
+    </div>
+
+    <!-- REGISTER FORM -->
+    <div id="lf-register" style="display:none">
+      <div class="fg"><label class="flabel">Nombre completo</label><input class="finput" id="r-name" placeholder="Ej: Juan Pérez"></div>
+      <div class="fg"><label class="flabel">Correo</label><input class="finput" id="r-email" type="email" placeholder="juan@somos.agua"></div>
+      <div class="fg"><label class="flabel">Contraseña</label><input class="finput" id="r-pass" type="password" placeholder="Mínimo 6 caracteres"></div>
+      <div class="fg"><label class="flabel">Rol</label>
+        <select class="finput" id="r-role">
+          <option value="admin">Administrador</option>
+          <option value="repartidor">Repartidor</option>
+          <option value="operario">Operario de planta</option>
+          <option value="vendedor">Vendedor</option>
+        </select>
+      </div>
+      <button class="btn btn-water btn-full" onclick="doRegister()">Crear cuenta</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== SETUP ===== -->
 <div class="setup-screen" id="setup-screen">
   <div class="setup-logo">
     <div class="setup-logo-icon">💧</div>
-    <div class="setup-logo-text">Agua<span>Pro</span></div>
+    <div class="setup-logo-text">SOMOS <span>AGUA</span></div>
   </div>
   <p class="setup-sub">Sistema de gestión para producción y distribución de agua en sachet 400ml</p>
   <div class="setup-card">
@@ -266,8 +339,8 @@ textarea.finput{resize:vertical;min-height:70px;line-height:1.5}
 
 <!-- TOPBAR -->
 <div class="topbar" id="main-topbar" style="display:none">
-  <div class="topbar-brand"><div class="topbar-icon">💧</div><div class="topbar-title">Agua<span>Pro</span></div></div>
-  <div class="topbar-right"><div class="sync-dot" id="sync-dot"></div><div class="date-pill" id="date-pill"></div></div>
+  <div class="topbar-brand"><div class="topbar-icon">💧</div><div class="topbar-title">SOMOS <span>AGUA</span></div></div>
+  <div class="topbar-right"><div class="sync-dot" id="sync-dot"></div><div class="date-pill" id="date-pill"></div><div class="topbar-user" onclick="openModal('modal-user-menu')" title="Mi cuenta"><div class="topbar-user-av" id="topbar-user-av">?</div></div></div>
 </div>
 
 <!-- ===== PANTALLA 1: PRODUCCIÓN ===== -->
@@ -395,15 +468,29 @@ textarea.finput{resize:vertical;min-height:70px;line-height:1.5}
     <button class="btn btn-sm btn-ghost" onclick="getGPS()">Ubicar</button>
   </div>
   <!-- RUTA -->
-  <div class="card" id="route-card">
-    <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
-      <span>🗺 Ruta óptima del día</span>
-      <button class="btn btn-sm btn-ghost" onclick="calcRoute()">Calcular</button>
-    </div>
-    <div id="route-list"><div style="font-size:12px;color:var(--text3);padding:8px 0">Presiona Calcular para ordenar los PDV por proximidad</div></div>
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab(this,'tm-ruta')">Ruta del día</div>
+    <div class="tab" onclick="switchTab(this,'tm-historial');renderRouteHistory()">Historial rutas</div>
   </div>
-  <button class="btn btn-water btn-full" style="margin-bottom:12px" onclick="openModal('modal-pdv')">+ Registrar nuevo PDV</button>
-  <div id="pdv-list-map"><div style="text-align:center;padding:24px;color:var(--text3);font-size:13px">Sin puntos registrados</div></div>
+  <div id="tm-ruta">
+    <div class="card" id="route-card">
+      <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+        <span>🗺 Ruta óptima del día</span>
+        <button class="btn btn-sm btn-ghost" onclick="calcRoute()">Calcular y guardar</button>
+      </div>
+      <div id="route-list"><div style="font-size:12px;color:var(--text3);padding:8px 0">Presiona Calcular para ordenar los PDV por proximidad</div></div>
+    </div>
+    <button class="btn btn-water btn-full" style="margin-bottom:12px" onclick="openModal('modal-pdv')">+ Registrar nuevo PDV</button>
+    <div id="pdv-list-map"><div style="text-align:center;padding:24px;color:var(--text3);font-size:13px">Sin puntos registrados</div></div>
+  </div>
+  <div id="tm-historial" style="display:none">
+    <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center">
+      <input type="date" class="finput" id="rh-fecha" style="flex:1">
+      <button class="btn btn-sm btn-ghost" onclick="renderRouteHistory()">Ver</button>
+    </div>
+    <div id="route-history-list"><div style="text-align:center;padding:28px;color:var(--text3);font-size:13px">Sin rutas guardadas</div></div>
+  </div>
+
 </div>
 
 <!-- ===== PANTALLA 3: VENTAS ===== -->
@@ -537,6 +624,26 @@ textarea.finput{resize:vertical;min-height:70px;line-height:1.5}
   </div>
 </div>
 
+
+<!-- MODAL USER MENU -->
+<div class="modal-overlay" id="modal-user-menu" onclick="closeModalOut(event,'modal-user-menu')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div style="text-align:center;margin-bottom:20px">
+      <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--water));display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;color:#020d18;margin:0 auto 10px" id="um-avatar">?</div>
+      <div style="font-size:18px;font-weight:800" id="um-name">Usuario</div>
+      <div style="font-size:12px;color:var(--text2);font-family:var(--mono)" id="um-email"></div>
+      <span class="badge b-blue" id="um-role" style="margin-top:6px">-</span>
+    </div>
+    <div style="background:var(--bg3);border-radius:var(--r2);padding:12px;margin-bottom:16px">
+      <div style="font-size:11px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px">Sesiones activas</div>
+      <div id="um-sessions"><div style="font-size:12px;color:var(--text3)">Cargando...</div></div>
+    </div>
+    <button class="btn btn-danger btn-full" onclick="doLogout()">Cerrar sesión</button>
+    <button class="btn btn-ghost btn-full" style="margin-top:8px" onclick="closeModal('modal-user-menu')">Cancelar</button>
+  </div>
+</div>
+
 <!-- MODAL CONFIG -->
 <div class="modal-overlay" id="modal-config" onclick="closeModalOut(event,'modal-config')">
   <div class="modal">
@@ -620,7 +727,31 @@ create policy "open" on pdvs for all using (true) with check (true);
 create policy "open" on ventas for all using (true) with check (true);
 create policy "open" on config for all using (true) with check (true);
 -- Insertar config inicial
-insert into config(key,value) values('stock_max','10000') on conflict(key) do nothing;`;
+insert into config(key,value) values('stock_max','10000') on conflict(key) do nothing;
+create table if not exists sessions (
+  id bigint primary key generated always as identity,
+  user_id uuid,
+  user_name text,
+  user_role text,
+  action text,
+  device text,
+  created_at timestamptz default now()
+);
+create table if not exists route_history (
+  id bigint primary key generated always as identity,
+  fecha date,
+  user_name text,
+  user_id uuid,
+  total_pdvs integer,
+  start_lat double precision,
+  start_lng double precision,
+  stops jsonb,
+  created_at timestamptz default now()
+);
+alter table sessions enable row level security;
+alter table route_history enable row level security;
+create policy "open" on sessions for all using (true) with check (true);
+create policy "open" on route_history for all using (true) with check (true);`;
 document.getElementById('sql-box').textContent=SQL;
 
 // ============================================================
@@ -647,10 +778,46 @@ async function loadIDB(){for(const s of STORES)cache[s]=await idbAll(s);}
 // ============================================================
 // SUPABASE
 // ============================================================
-async function initSupabase(){const url=V('cfg-url').trim(),key=V('cfg-key').trim();if(!url||!key)return toast('Completa URL y Key',true);LS('sb_url',url);LS('sb_key',key);await connectSB(url,key);}
+async function initSupabase(){const url=V('cfg-url').trim(),key=V('cfg-key').trim();if(!url||!key)return toast('Completa URL y Key',true);LS('sb_url',url);LS('sb_key',key);await connectSB(url,key,true);}
 async function reconnectSB(){const url=V('cfg-url2').trim()||LS('sb_url'),key=V('cfg-key2').trim()||LS('sb_key');if(!url||!key)return toast('Faltan credenciales',true);LS('sb_url',url);LS('sb_key',key);closeModal('modal-config');await connectSB(url,key);}
-async function connectSB(url,key){showLoad('Conectando a Supabase...');try{SB=window.supabase.createClient(url,key);const{error}=await SB.from('pdvs').select('id').limit(1);if(error)throw error;isOnline=true;dot('online');await loadAll();startApp();toast('✓ Conectado a Supabase');}catch(e){hideLoad();toast('Error: '+(e.message||'Sin conexión'),true);dot('error');}}
-async function startOffline(){isOnline=false;dot('error');showLoad('Cargando datos locales...');await loadIDB();startApp();toast('Modo offline');EL('offline-bar').classList.add('show');}
+async function connectSB(url,key,showLoginAfter=false){
+  showLoad('Conectando a Supabase...');
+  try{
+    SB=window.supabase.createClient(url,key);
+    const{error}=await SB.from('pdvs').select('id').limit(1);
+    if(error) throw error;
+    isOnline=true;dot('online');
+    await loadAll();
+    hideLoad();
+    if(showLoginAfter){
+      // Check if already has a session
+      const{data:{session}}=await SB.auth.getSession();
+      if(session){
+        await afterLogin(session.user);
+        startApp();
+      } else {
+        EL('setup-screen').style.display='none';
+        EL('login-screen').style.display='flex';
+        showSavedUsers();
+      }
+    } else {
+      startApp();
+      toast('✓ Conectado a Supabase');
+    }
+  }catch(e){
+    hideLoad();
+    toast('Error: '+(e.message||'Sin conexión'),true);
+    dot('error');
+  }
+}
+async function startOffline(){
+  isOnline=false;dot('error');showLoad('Cargando datos locales...');await loadIDB();hideLoad();
+  EL('setup-screen').style.display='none';
+  EL('login-screen').style.display='flex';
+  showSavedUsers();
+  EL('offline-bar').classList.add('show');
+  toast('Modo offline — inicia sesión');
+}
 async function loadAll(){showLoad('Sincronizando datos...');for(const s of STORES){const{data,error}=await SB.from(s).select('*').order('id',{ascending:true});if(!error&&data){cache[s]=data;await idbSync(s,data);}}
 // Load config
 const{data:cfg}=await SB.from('config').select('*');if(cfg)cfg.forEach(c=>cache.config[c.key]=c.value);
@@ -663,7 +830,16 @@ window.addEventListener('offline',()=>{isOnline=false;dot('error');EL('offline-b
 // ============================================================
 // APP START
 // ============================================================
-function startApp(){hideLoad();EL('setup-screen').style.display='none';EL('main-topbar').style.display='';EL('main-nav').style.display='';goScreen('screen-prod',0);
+function startApp(){
+  hideLoad();
+  EL('setup-screen').style.display='none';
+  EL('login-screen').style.display='none';
+  EL('main-topbar').style.display='';
+  EL('main-nav').style.display='';
+  goScreen('screen-prod',0);
+  updateUserUI();
+  // Load route history cache
+  if(SB&&isOnline){SB.from('route_history').select('*').order('id',{ascending:false}).limit(50).then(({data})=>{if(data)cache.route_history=data;});}
 const d=new Date();EL('date-pill').textContent=d.toLocaleDateString('es-BO',{day:'2-digit',month:'short'});
 EL('vd-fecha').value=d.toISOString().slice(0,10);EL('p-hist-date').value=d.toISOString().slice(0,10);EL('pv-fecha').value=d.toISOString().slice(0,10);
 refreshProdLive();buildQuickHours();refreshPDVSelect();renderPedidos('pendiente');refreshStockTab();}
@@ -857,31 +1033,7 @@ function renderPDVListMap(){
 
 function focusPDV(lat,lng,idx){if(osmMap){osmMap.setView([lat,lng],17);osmMarkers[idx]?.openPopup();}}
 
-// CALCULAR RUTA (ordenar por cercanía desde posición actual)
-function calcRoute(){
-  if(!cache.pdvs.length)return toast('No hay PDV registrados',true);
-  const pdvsConGPS=cache.pdvs.filter(p=>p.lat&&p.lng);
-  if(!pdvsConGPS.length)return toast('PDV sin coordenadas GPS',true);
-  // Get current position or use first PDV as start
-  const doRoute=(startLat,startLng)=>{
-    // Nearest neighbor algorithm
-    let remaining=[...pdvsConGPS],sorted=[],clat=startLat,clng=startLng;
-    while(remaining.length){
-      let best=null,bestD=Infinity;
-      remaining.forEach(p=>{const d=Math.hypot(Number(p.lat)-clat,Number(p.lng)-clng);if(d<bestD){bestD=d;best=p;}});
-      sorted.push(best);remaining=remaining.filter(p=>p.id!==best.id);clat=Number(best.lat);clng=Number(best.lng);
-    }
-    // Draw route on map
-    if(routeLayer){osmMap.removeLayer(routeLayer);}
-    const latlngs=[[startLat,startLng],...sorted.map(p=>[Number(p.lat),Number(p.lng)])];
-    if(osmMap){routeLayer=L.polyline(latlngs,{color:'#00b4ff',weight:3,opacity:.7,dashArray:'8,6'}).addTo(osmMap);osmMap.fitBounds(routeLayer.getBounds(),{padding:[30,30]});}
-    // Render route list
-    EL('route-list').innerHTML='<div style="position:relative">'+sorted.map((p,i)=>`<div class="route-item"><div class="route-num">${i+1}</div><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:700">${p.biz_name}</div><div style="font-size:11px;color:var(--text2)">${p.owner_name} · ${p.dir||''}</div></div><span class="badge b-cyan">${p.capacidad||100} uds</span></div>`).join('')+'</div>';
-    toast('✓ Ruta calculada: '+sorted.length+' PDV');
-  };
-  if(navigator.geolocation){navigator.geolocation.getCurrentPosition(pos=>doRoute(pos.coords.latitude,pos.coords.longitude),()=>doRoute(Number(pdvsConGPS[0].lat),Number(pdvsConGPS[0].lng)),{enableHighAccuracy:true});}
-  else doRoute(Number(pdvsConGPS[0].lat),Number(pdvsConGPS[0].lng));
-}
+// calcRoute moved below with history support
 
 // ============================================================
 // SAVE PDV
@@ -1029,15 +1181,281 @@ function refreshDash(){
 // ============================================================
 function exportData(){const blob=new Blob([JSON.stringify({...cache,exportedAt:new Date().toISOString()},null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`aguapro_${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(url);toast('✓ Datos exportados');}
 
+
+// ============================================================
+// AUTH — LOGIN / REGISTER / LOGOUT
+// ============================================================
+let currentUser = null;
+
+function switchLoginTab(tab){
+  EL('lt-login').classList.toggle('active', tab==='login');
+  EL('lt-register').classList.toggle('active', tab==='register');
+  EL('lf-login').style.display = tab==='login'?'':'none';
+  EL('lf-register').style.display = tab==='register'?'':'none';
+}
+
+function showSavedUsers(){
+  const saved = JSON.parse(LS('saved_users')||'[]');
+  const el = EL('saved-users-list'); if(!el) return;
+  if(!saved.length){
+    EL('lf-manual').style.display='';
+    el.style.display='none';
+    return;
+  }
+  el.style.display='';
+  EL('lf-manual').style.display='none';
+  const roles={admin:'Administrador',repartidor:'Repartidor',operario:'Operario',vendedor:'Vendedor'};
+  el.innerHTML = saved.map(u=>`
+    <div class="user-chip" onclick="loginSaved('${u.email}','${u.pass}')">
+      <div class="user-chip-av">${(u.name||'?')[0].toUpperCase()}</div>
+      <div class="user-chip-info">
+        <div class="user-chip-name">${u.name}</div>
+        <div class="user-chip-role">${roles[u.role]||u.role} · ${u.email}</div>
+      </div>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="color:var(--text3)"><path d="M9 18l6-6-6-6"/></svg>
+    </div>`).join('')+
+    `<button class="btn btn-ghost btn-full" style="margin-top:10px;font-size:12px" onclick="EL('lf-manual').style.display='';this.style.display='none'">Usar otro correo</button>`;
+}
+
+async function doLogin(){
+  if(!SB) return toast('Conecta Supabase primero',true);
+  const email=V('l-email').trim(), pass=V('l-pass');
+  if(!email||!pass) return toast('Completa los campos',true);
+  showLoad('Iniciando sesión...');
+  const {data,error} = await SB.auth.signInWithPassword({email,password:pass});
+  hideLoad();
+  if(error) return toast('Error: '+error.message,true);
+  await afterLogin(data.user);
+}
+
+async function loginSaved(email,pass){
+  if(!SB) return toast('Conecta Supabase primero',true);
+  showLoad('Iniciando sesión...');
+  const {data,error} = await SB.auth.signInWithPassword({email,password:pass});
+  hideLoad();
+  if(error){ toast('Sesión expirada, ingresa contraseña',true); EL('l-email').value=email; EL('lf-manual').style.display=''; return; }
+  await afterLogin(data.user);
+}
+
+async function doRegister(){
+  if(!SB) return toast('Conecta Supabase primero',true);
+  const name=V('r-name').trim(), email=V('r-email').trim(), pass=V('r-pass'), role=V('r-role');
+  if(!name||!email||!pass) return toast('Completa todos los campos',true);
+  if(pass.length<6) return toast('Contraseña mínimo 6 caracteres',true);
+  showLoad('Creando cuenta...');
+  const {data,error} = await SB.auth.signUp({email,password:pass,options:{data:{full_name:name,role}}});
+  hideLoad();
+  if(error) return toast('Error: '+error.message,true);
+  // Save locally for quick login
+  savUserLocally({name,email,pass,role});
+  toast('✓ Cuenta creada. Verifica tu correo si es necesario.');
+  switchLoginTab('login');
+}
+
+async function afterLogin(user){
+  currentUser = {
+    id: user.id,
+    email: user.email,
+    name: user.user_metadata?.full_name || user.email.split('@')[0],
+    role: user.user_metadata?.role || 'repartidor'
+  };
+  // Save for quick access
+  savUserLocally({name:currentUser.name, email:currentUser.email, pass:'', role:currentUser.role});
+  // Register session in DB
+  await logSession('login');
+  updateUserUI();
+  EL('login-screen').style.display='none';
+  toast('✓ Bienvenido, '+currentUser.name);
+}
+
+function savUserLocally(u){
+  const saved = JSON.parse(LS('saved_users')||'[]');
+  const idx = saved.findIndex(s=>s.email===u.email);
+  if(idx>=0) saved[idx]={...saved[idx],...u};
+  else saved.push(u);
+  LS('saved_users', JSON.stringify(saved.slice(-5)));
+}
+
+async function logSession(action){
+  if(!SB||!currentUser) return;
+  try{
+    await SB.from('sessions').insert({
+      user_id: currentUser.id,
+      user_name: currentUser.name,
+      user_role: currentUser.role,
+      action,
+      device: navigator.userAgent.slice(0,80)
+    });
+    cache.sessions = cache.sessions||[];
+    cache.sessions.push({user_name:currentUser.name,user_role:currentUser.role,action,created_at:new Date().toISOString()});
+  }catch(e){}
+}
+
+function updateUserUI(){
+  if(!currentUser) return;
+  const av = (currentUser.name||'?')[0].toUpperCase();
+  const el = EL('topbar-user-av'); if(el) el.textContent=av;
+  EL('um-avatar').textContent=av;
+  EL('um-name').textContent=currentUser.name;
+  EL('um-email').textContent=currentUser.email;
+  const roles={admin:'Administrador',repartidor:'Repartidor',operario:'Operario',vendedor:'Vendedor'};
+  EL('um-role').textContent=roles[currentUser.role]||currentUser.role;
+}
+
+async function openUserMenu(){
+  updateUserUI();
+  // Load recent sessions
+  if(SB){
+    const {data} = await SB.from('sessions').select('*').order('created_at',{ascending:false}).limit(8);
+    if(data){
+      EL('um-sessions').innerHTML = data.length?data.map(s=>`
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)">
+          <div><div style="font-size:12px;font-weight:700">${s.user_name}</div><div style="font-size:10px;color:var(--text3);font-family:var(--mono)">${s.action} · ${new Date(s.created_at).toLocaleString('es-BO')}</div></div>
+          <span class="badge b-blue" style="font-size:10px">${s.user_role}</span>
+        </div>`).join('')
+        :'<div style="font-size:12px;color:var(--text3)">Sin sesiones</div>';
+    }
+  }
+  openModal('modal-user-menu');
+}
+
+async function doLogout(){
+  await logSession('logout');
+  if(SB) await SB.auth.signOut();
+  currentUser=null;
+  closeModal('modal-user-menu');
+  EL('login-screen').style.display='flex';
+  showSavedUsers();
+  toast('Sesión cerrada');
+}
+
+// Override openModal for user-menu to load sessions
+const _origOpenModal = openModal;
+function openModal(id){
+  if(id==='modal-user-menu') openUserMenu();
+  else _origOpenModal(id);
+}
+
+// ============================================================
+// HISTORIAL DE RUTAS
+// ============================================================
+async function calcRoute(){
+  if(!cache.pdvs.length) return toast('No hay PDV registrados',true);
+  const pdvsConGPS=cache.pdvs.filter(p=>p.lat&&p.lng);
+  if(!pdvsConGPS.length) return toast('PDV sin coordenadas GPS',true);
+  const doRoute=(startLat,startLng)=>{
+    let remaining=[...pdvsConGPS],sorted=[],clat=startLat,clng=startLng;
+    while(remaining.length){
+      let best=null,bestD=Infinity;
+      remaining.forEach(p=>{const d=Math.hypot(Number(p.lat)-clat,Number(p.lng)-clng);if(d<bestD){bestD=d;best=p;}});
+      sorted.push(best);remaining=remaining.filter(p=>p.id!==best.id);clat=Number(best.lat);clng=Number(best.lng);
+    }
+    if(routeLayer) osmMap.removeLayer(routeLayer);
+    const latlngs=[[startLat,startLng],...sorted.map(p=>[Number(p.lat),Number(p.lng)])];
+    if(osmMap){routeLayer=L.polyline(latlngs,{color:'#00b4ff',weight:3,opacity:.75,dashArray:'8,6'}).addTo(osmMap);osmMap.fitBounds(routeLayer.getBounds(),{padding:[30,30]});}
+    const el=EL('route-list');
+    if(el) el.innerHTML='<div>'+sorted.map((p,i)=>`<div class="route-item"><div class="route-num">${i+1}</div><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:700">${p.biz_name}</div><div style="font-size:11px;color:var(--text2)">${p.owner_name} · ${p.dir||''}</div></div><span class="badge b-cyan">${p.capacidad||100} uds</span></div>`).join('')+'</div>';
+    // GUARDAR RUTA EN BD
+    saveRouteHistory(sorted, startLat, startLng);
+    toast('✓ Ruta calculada y guardada: '+sorted.length+' PDV');
+  };
+  if(navigator.geolocation) navigator.geolocation.getCurrentPosition(pos=>doRoute(pos.coords.latitude,pos.coords.longitude),()=>doRoute(Number(pdvsConGPS[0].lat),Number(pdvsConGPS[0].lng)),{enableHighAccuracy:true});
+  else doRoute(Number(pdvsConGPS[0].lat),Number(pdvsConGPS[0].lng));
+}
+
+async function saveRouteHistory(sortedPDVs, startLat, startLng){
+  if(!SB) return;
+  try {
+    const record = {
+      fecha: new Date().toISOString().slice(0,10),
+      user_name: currentUser?.name || 'Sin usuario',
+      user_id: currentUser?.id || null,
+      total_pdvs: sortedPDVs.length,
+      start_lat: startLat,
+      start_lng: startLng,
+      stops: JSON.stringify(sortedPDVs.map((p,i)=>({order:i+1,pdv_id:p.id,biz_name:p.biz_name,owner:p.owner_name,dir:p.dir,lat:p.lat,lng:p.lng,capacidad:p.capacidad||100})))
+    };
+    const {data} = await SB.from('route_history').insert(record).select().single();
+    if(data){ cache.route_history=cache.route_history||[]; cache.route_history.push(data); }
+  } catch(e){ console.log('route save error:',e); }
+}
+
+async function renderRouteHistory(){
+  const el = EL('route-history-list'); if(!el) return;
+  const dt = V('rh-fecha');
+  // Load from Supabase if online
+  let routes = cache.route_history||[];
+  if(SB && isOnline){
+    const q = SB.from('route_history').select('*').order('id',{ascending:false}).limit(30);
+    if(dt) { const {data}=await q.eq('fecha',dt); routes=data||[]; }
+    else { const {data}=await q; routes=data||[]; }
+    cache.route_history=routes;
+  } else if(dt){
+    routes=routes.filter(r=>r.fecha===dt);
+  }
+  if(!routes.length){el.innerHTML='<div style="text-align:center;padding:28px;color:var(--text3);font-size:13px">Sin rutas guardadas para esta fecha</div>';return;}
+  el.innerHTML=routes.map(r=>{
+    const stops = typeof r.stops==='string'?JSON.parse(r.stops):(r.stops||[]);
+    return`<div class="rh-card">
+      <div class="rh-header">
+        <div>
+          <div class="rh-date">📅 ${r.fecha}</div>
+          <div class="rh-user">👤 ${r.user_name} · ${stops.length} paradas</div>
+        </div>
+        <span class="badge b-cyan">${stops.length} PDV</span>
+      </div>
+      <div class="rh-stops">
+        ${stops.slice(0,6).map(s=>`<div class="rh-stop"><div class="rh-stop-num">${s.order}</div><div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.biz_name}</div><div style="font-size:10px;color:var(--text3)">${s.dir||''}</div></div><span style="font-size:10px;color:var(--text2);font-family:var(--mono);flex-shrink:0">${s.capacidad} u.</span></div>`).join('')}
+        ${stops.length>6?`<div style="font-size:11px;color:var(--text3);padding:6px 0;font-family:var(--mono)">+${stops.length-6} paradas más...</div>`:''}
+      </div>
+      <button class="btn btn-ghost btn-full" style="margin-top:10px;font-size:12px" onclick="replayRoute(${r.id})">🗺 Ver ruta en mapa</button>
+    </div>`;
+  }).join('');
+}
+
+async function replayRoute(routeId){
+  const routes = cache.route_history||[];
+  let route = routes.find(r=>r.id===routeId);
+  if(!route&&SB){ const {data}=await SB.from('route_history').select('*').eq('id',routeId).single(); route=data; }
+  if(!route) return toast('Ruta no encontrada',true);
+  const stops = typeof route.stops==='string'?JSON.parse(route.stops):(route.stops||[]);
+  // Switch to map tab and draw route
+  goScreen('screen-mapa',1);
+  initMap();
+  setTimeout(()=>{
+    if(routeLayer) osmMap.removeLayer(routeLayer);
+    const latlngs=stops.filter(s=>s.lat&&s.lng).map(s=>[Number(s.lat),Number(s.lng)]);
+    if(latlngs.length>0){
+      routeLayer=L.polyline(latlngs,{color:'#ffb830',weight:3,opacity:.8,dashArray:'8,6'}).addTo(osmMap);
+      osmMap.fitBounds(routeLayer.getBounds(),{padding:[30,30]});
+    }
+    // Show in route list
+    const el=EL('route-list');
+    if(el) el.innerHTML='<div style="font-size:11px;color:var(--warn);font-family:var(--mono);margin-bottom:8px">📅 Reproduciendo ruta del '+route.fecha+'</div><div>'+stops.map((s,i)=>`<div class="route-item"><div class="route-num">${i+1}</div><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:700">${s.biz_name}</div><div style="font-size:11px;color:var(--text2)">${s.owner} · ${s.dir||''}</div></div><span class="badge b-warn">${s.capacidad} uds</span></div>`).join('')+'</div>';
+    // Switch to ruta tab
+    const rutaTab=document.querySelector('#tm-ruta');if(rutaTab)rutaTab.style.display='block';
+    const histTab=document.querySelector('#tm-historial');if(histTab)histTab.style.display='none';
+    setTimeout(()=>osmMap.invalidateSize(),300);
+    toast('✓ Mostrando ruta del '+route.fecha+' ('+route.user_name+')');
+  },400);
+}
+
 // ============================================================
 // INIT
 // ============================================================
 (async function init(){
   await openIDB();await loadIDB();
   const today2=new Date().toISOString().slice(0,10);
-  ['vd-fecha','p-hist-date','pv-fecha'].forEach(id=>{const e=EL(id);if(e)e.value=today2;});
+  ['vd-fecha','p-hist-date','pv-fecha','rh-fecha'].forEach(id=>{const e=EL(id);if(e)e.value=today2;});
   const url=LS('sb_url'),key=LS('sb_key');
-  if(url&&key){EL('cfg-url').value=url;EL('cfg-key').value=key;await connectSB(url,key);}
+  if(url&&key){
+    EL('cfg-url').value=url;EL('cfg-key').value=key;
+    // Connect to Supabase first, then show login
+    await connectSB(url,key,true); // true = showLogin after connect
+  } else {
+    // Show setup first
+    EL('setup-screen').style.display='flex';
+  }
 })();
 </script>
 </body>
