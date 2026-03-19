@@ -70,3 +70,39 @@ Abre la URL en Chrome Android → menú → **"Agregar a pantalla de inicio"**
 | `pdvs` | Puntos de venta con GPS, foto y datos del propietario |
 | `ventas` | Pre-ventas y ventas con estado pendiente/entregado |
 | `config` | Configuración como stock máximo |
+
+---
+
+## 🔄 Nuevas tablas (v2) — ejecutar en Supabase SQL Editor
+
+```sql
+create table if not exists sessions (
+  id bigint primary key generated always as identity,
+  user_id uuid,
+  user_name text,
+  user_role text,
+  action text,
+  device text,
+  created_at timestamptz default now()
+);
+
+create table if not exists route_history (
+  id bigint primary key generated always as identity,
+  fecha date,
+  user_name text,
+  user_id uuid,
+  total_pdvs integer,
+  start_lat double precision,
+  start_lng double precision,
+  stops jsonb,
+  created_at timestamptz default now()
+);
+
+alter table sessions enable row level security;
+alter table route_history enable row level security;
+create policy "open" on sessions for all using (true) with check (true);
+create policy "open" on route_history for all using (true) with check (true);
+```
+
+También habilitar autenticación en Supabase: **Authentication → Providers → Email** (activar).
+
