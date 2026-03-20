@@ -1695,73 +1695,41 @@ function buildNotaPDVText(pdvData){
   const pi    = cache.pdvs.find(p=>p.id==pdvData.id||p.biz_name===pdvData.name);
   const fecha = new Date().toLocaleDateString('es-BO',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
   const hora  = new Date().toLocaleTimeString('es-BO',{hour:'2-digit',minute:'2-digit'});
-  const boniTotal   = pdvData.ventas.reduce((a,v)=>a+(v.bonificacion||0),0);
-  const costoBoni   = pdvData.ventas.reduce((a,v)=>a+Number(v.total_boni||0),0);
-  const totalVenta  = pdvData.ventas.reduce((a,v)=>a+Number(v.total),0);
-  const totalGeneral = totalVenta + costoBoni;
+  const boniTotal  = pdvData.ventas.reduce((a,v)=>a+(v.bonificacion||0),0);
+  const totalVenta = pdvData.ventas.reduce((a,v)=>a+Number(v.total),0);
   const pago = pdvData.ventas[0]?.pago || 'efectivo';
   const pagoEmoji = pago==='efectivo'?'💵':pago==='qr'?'📲':'📋';
 
   let txt = '';
-  txt += `💧 *SOMOS AGUA*
-`;
-  txt += `🧾 *NOTA DE VENTA*
-`;
-  txt += `${'─'.repeat(30)}
-`;
-  txt += `📅 ${fecha}
-`;
-  txt += `🕐 ${hora}
-`;
-  txt += `${'─'.repeat(30)}
-`;
-  txt += `🏪 *${pdvData.name}*
-`;
-  if(pi?.owner_name) txt += `👤 Prop: ${pi.owner_name}
-`;
-  if(pi?.dir)        txt += `📍 ${pi.dir}
-`;
-  if(pi?.tel)        txt += `📞 ${pi.tel}
-`;
-  txt += `${'─'.repeat(30)}
-`;
-  txt += `*DETALLE:*
-`;
+  txt += `💧 *SOMOS AGUA*\n`;
+  txt += `🧾 *NOTA DE VENTA*\n`;
+  txt += `${'─'.repeat(30)}\n`;
+  txt += `📅 ${fecha}\n`;
+  txt += `🕐 ${hora}\n`;
+  txt += `${'─'.repeat(30)}\n`;
+  txt += `🏪 *${pdvData.name}*\n`;
+  if(pi?.owner_name) txt += `👤 Prop: ${pi.owner_name}\n`;
+  if(pi?.dir)        txt += `📍 ${pi.dir}\n`;
+  if(pi?.tel)        txt += `📞 ${pi.tel}\n`;
+  txt += `${'─'.repeat(30)}\n`;
+  txt += `*DETALLE:*\n`;
   pdvData.ventas.forEach(v=>{
-    txt += `  • ${fmtNum(v.qty)} sachet × Bs.${Number(v.precio).toFixed(2)} = *${fmtBs(v.total)}*
-`;
-    if(v.bonificacion>0){
-      txt += `    🎁 Bonif: ${v.bonificacion} sachet × Bs.${Number(v.precio_boni||v.precio).toFixed(2)} = ${fmtBs(v.total_boni||0)}
-`;
-    }
+    txt += `  • ${fmtNum(v.qty)} sachet × Bs.${Number(v.precio).toFixed(2)} = *${fmtBs(v.total)}*\n`;
+    if(v.bonificacion>0)
+      txt += `    🎁 + ${v.bonificacion} sachet de bonificación\n`;
   });
-  txt += `${'─'.repeat(30)}
-`;
-  txt += `📦 Sachet entregados: *${fmtNum(pdvData.sachets)}*
-`;
+  txt += `${'─'.repeat(30)}\n`;
+  txt += `📦 Sachet entregados: *${fmtNum(pdvData.sachets)}*\n`;
   if(boniTotal>0){
-    txt += `🎁 Bonificación: *${boniTotal} sachet* (Bs.${costoBoni.toFixed(2)})
-`;
-    txt += `📦 Total sachet (incl.bonif.): *${fmtNum(pdvData.sachets+boniTotal)}*
-`;
+    txt += `🎁 Bonificación incluida: *${boniTotal} sachet*\n`;
+    txt += `📦 Total sachet recibidos: *${fmtNum(pdvData.sachets+boniTotal)}*\n`;
   }
-  txt += `${'─'.repeat(30)}
-`;
-  txt += `💰 Subtotal venta:   *${fmtBs(totalVenta)}*
-`;
-  if(boniTotal>0)
-    txt += `🎁 Costo bonificación: *${fmtBs(costoBoni)}*
-`;
-  txt += `✅ *TOTAL A COBRAR: ${fmtBs(totalGeneral)}*
-`;
-  txt += `${'─'.repeat(30)}
-`;
-  txt += `${pagoEmoji} Pago: ${pago.charAt(0).toUpperCase()+pago.slice(1)}
-`;
-  if(pdvData.ventas[0]?.notas) txt += `📝 Nota: ${pdvData.ventas[0].notas}
-`;
-  txt += `${'─'.repeat(30)}
-`;
+  txt += `${'─'.repeat(30)}\n`;
+  txt += `✅ *TOTAL A COBRAR: ${fmtBs(totalVenta)}*\n`;
+  txt += `${'─'.repeat(30)}\n`;
+  txt += `${pagoEmoji} Pago: ${pago.charAt(0).toUpperCase()+pago.slice(1)}\n`;
+  if(pdvData.ventas[0]?.notas) txt += `📝 Nota: ${pdvData.ventas[0].notas}\n`;
+  txt += `${'─'.repeat(30)}\n`;
   txt += `_Gracias por su preferencia_ 💧`;
   return txt;
 }
@@ -1775,75 +1743,45 @@ function buildNotaDiaText(fecha){
     const byF=v.fecha_entrega===dt;
     return (byC||byF)&&v.status==='entregado';
   });
-
-  if(!ventasDelDia.length) return `💧 *SOMOS AGUA*
-📅 ${dStr}
-
-Sin ventas registradas para esta fecha.`;
+  if(!ventasDelDia.length) return `💧 *SOMOS AGUA*\n📅 ${dStr}\n\nSin ventas registradas para esta fecha.`;
 
   // Group by PDV
   const pdvMap={};
   ventasDelDia.forEach(v=>{
     const k=v.pdv_id||'libre', nm=v.pdv_name||'Venta libre';
-    if(!pdvMap[k]) pdvMap[k]={name:nm,sachets:0,total:0,boni:0,costoBoni:0,pago:v.pago||'efectivo'};
-    pdvMap[k].sachets   += v.qty;
-    pdvMap[k].total     += Number(v.total);
-    pdvMap[k].boni      += v.bonificacion||0;
-    pdvMap[k].costoBoni += Number(v.total_boni||0);
-    pdvMap[k].pago       = v.pago||pdvMap[k].pago;
+    if(!pdvMap[k]) pdvMap[k]={name:nm,sachets:0,total:0,boni:0,pago:v.pago||'efectivo'};
+    pdvMap[k].sachets += v.qty;
+    pdvMap[k].total   += Number(v.total);   // solo lo que paga el cliente
+    pdvMap[k].boni    += v.bonificacion||0;
+    pdvMap[k].pago     = v.pago||pdvMap[k].pago;
   });
-  const lista  = Object.values(pdvMap).sort((a,b)=>b.total-a.total);
-  const totGen = lista.reduce((a,p)=>a+p.total+p.costoBoni,0);
-  const totSac = lista.reduce((a,p)=>a+p.sachets,0);
-  const totBon = lista.reduce((a,p)=>a+p.boni,0);
-  const totCosB= lista.reduce((a,p)=>a+p.costoBoni,0);
+  const lista   = Object.values(pdvMap).sort((a,b)=>b.total-a.total);
+  const totVenta= lista.reduce((a,p)=>a+p.total,0);  // total real a cobrar
+  const totSac  = lista.reduce((a,p)=>a+p.sachets,0);
+  const totBon  = lista.reduce((a,p)=>a+p.boni,0);
 
   let txt='';
-  txt += `💧 *SOMOS AGUA*
-`;
-  txt += `📊 *RESUMEN DE VENTAS*
-`;
-  txt += `${'─'.repeat(30)}
-`;
-  txt += `📅 ${dStr}
-`;
-  txt += `${'─'.repeat(30)}
-`;
+  txt += `💧 *SOMOS AGUA*\n`;
+  txt += `📊 *RESUMEN DE VENTAS*\n`;
+  txt += `${'─'.repeat(30)}\n`;
+  txt += `📅 ${dStr}\n`;
+  txt += `${'─'.repeat(30)}\n`;
   lista.forEach((p,i)=>{
     const pagoEmoji = p.pago==='efectivo'?'💵':p.pago==='qr'?'📲':'📋';
-    txt += `*${i+1}. ${p.name}*
-`;
-    txt += `   📦 ${fmtNum(p.sachets)} sachet → *${fmtBs(p.total)}*
-`;
+    txt += `*${i+1}. ${p.name}*\n`;
+    txt += `   📦 ${fmtNum(p.sachets)} sachet → *${fmtBs(p.total)}*\n`;
     if(p.boni>0)
-      txt += `   🎁 ${p.boni} bonif. → ${fmtBs(p.costoBoni)}
-`;
-    txt += `   ${pagoEmoji} ${p.pago}
-`;
+      txt += `   🎁 + ${p.boni} sachet bonificados\n`;
+    txt += `   ${pagoEmoji} ${p.pago}\n`;
   });
-  txt += `${'─'.repeat(30)}
-`;
-  txt += `📦 Total sachet: *${fmtNum(totSac)}*
-`;
-  if(totBon>0){
-    txt += `🎁 Total bonif.: *${totBon} sachet* (${fmtBs(totCosB)})
-`;
-    txt += `📦 Sachet totales (incl.): *${fmtNum(totSac+totBon)}*
-`;
-  }
-  txt += `${'─'.repeat(30)}
-`;
-  txt += `💰 Venta total:      *${fmtBs(totGen-totCosB)}*
-`;
+  txt += `${'─'.repeat(30)}\n`;
+  txt += `📦 Total sachet vendidos: *${fmtNum(totSac)}*\n`;
   if(totBon>0)
-    txt += `🎁 Bonificaciones:   *${fmtBs(totCosB)}*
-`;
-  txt += `✅ *TOTAL JORNADA: ${fmtBs(totGen)}*
-`;
-  txt += `📍 PDVs visitados: *${lista.length}*
-`;
-  txt += `${'─'.repeat(30)}
-`;
+    txt += `🎁 Total bonificados: *${totBon} sachet*\n`;
+  txt += `${'─'.repeat(30)}\n`;
+  txt += `✅ *TOTAL JORNADA: ${fmtBs(totVenta)}*\n`;
+  txt += `📍 PDVs visitados: *${lista.length}*\n`;
+  txt += `${'─'.repeat(30)}\n`;
   txt += `_SOMOS AGUA — Sistema de distribución_ 💧`;
   return txt;
 }
