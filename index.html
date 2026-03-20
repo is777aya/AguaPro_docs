@@ -262,6 +262,14 @@ textarea.finput{resize:vertical;min-height:70px;line-height:1.5}
 .dist-mid{background:rgba(0,180,255,.12);color:var(--accent)}
 .dist-far{background:rgba(255,184,48,.1);color:var(--warn)}
 .arrow-icon{font-size:18px;flex-shrink:0;transition:transform .3s}
+
+/* FOTO VISOR */
+.foto-visor-overlay{position:fixed;inset:0;background:rgba(2,13,24,.95);z-index:600;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .25s}
+.foto-visor-overlay.open{opacity:1;pointer-events:all}
+.foto-visor-img{max-width:100%;max-height:72vh;border-radius:var(--r);object-fit:contain;box-shadow:0 0 40px rgba(0,180,255,.25)}
+.foto-visor-info{margin-top:14px;text-align:center}
+.foto-visor-name{font-size:17px;font-weight:800;color:var(--text)}
+.foto-visor-sub{font-size:12px;color:var(--text2);font-family:var(--mono);margin-top:3px}
 ::-webkit-scrollbar{width:4px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
@@ -602,7 +610,8 @@ textarea.finput{resize:vertical;min-height:70px;line-height:1.5}
 <div class="modal-overlay" id="modal-pdv" onclick="closeModalOut(event,'modal-pdv')">
   <div class="modal">
     <div class="modal-handle"></div>
-    <div class="modal-title">📍 Nuevo Punto de Venta</div>
+    <div class="modal-title" id="modal-pdv-title">📍 Nuevo Punto de Venta</div>
+    <input type="hidden" id="pdv-edit-id" value="">
     <div style="margin-bottom:14px">
       <div class="card-title" style="margin-bottom:8px">Foto de la fachada</div>
       <div class="photo-zone" id="photo-zone" onclick="triggerCam()">
@@ -692,6 +701,17 @@ textarea.finput{resize:vertical;min-height:70px;line-height:1.5}
 </div>
 
 
+
+
+<!-- FOTO VISOR -->
+<div class="foto-visor-overlay" id="foto-visor" onclick="closeFotoVisor()">
+  <img id="foto-visor-img" src="" alt="Fachada PDV" class="foto-visor-img">
+  <div class="foto-visor-info">
+    <div class="foto-visor-name" id="foto-visor-name"></div>
+    <div class="foto-visor-sub" id="foto-visor-sub"></div>
+  </div>
+  <button class="btn btn-ghost btn-sm" style="margin-top:16px" onclick="closeFotoVisor()">✕ Cerrar</button>
+</div>
 
 <!-- MODAL NOTA DE VENTA -->
 <div class="modal-overlay" id="modal-nota-venta" onclick="closeModalOut(event,'modal-nota-venta')">
@@ -1234,7 +1254,27 @@ function refreshMarkers(){
     const pendPDV=cache.ventas.filter(v=>v.pdv_id===pdv.id&&v.status==='pendiente').length;
     const icon=L.divIcon({className:'',html:`<div style="position:relative"><div style="width:20px;height:20px;background:linear-gradient(135deg,#00b4ff,#06d6f5);border:2.5px solid #020d18;border-radius:50%;box-shadow:0 0 10px rgba(0,180,255,.7);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#020d18">${idx+1}</div>${pendPDV>0?`<div style="position:absolute;top:-4px;right:-4px;width:10px;height:10px;background:var(--warn);border-radius:50%;border:1.5px solid #020d18"></div>`:''}</div>`,iconSize:[20,20],iconAnchor:[10,10],popupAnchor:[0,-12]});
     const m=L.marker([lat,lng],{icon}).addTo(osmMap);
-    m.bindPopup(`<div style="min-width:200px"><div style="font-weight:800;font-size:14px;margin-bottom:3px;color:#cce8ff">${pdv.biz_name}</div><div style="font-size:11px;color:#6a9fc0;margin-bottom:4px">Prop: ${pdv.owner_name}</div><div style="font-size:11px;color:#cce8ff;margin-bottom:2px">📍 ${pdv.dir||''}</div><div style="font-size:11px;color:#cce8ff;margin-bottom:8px">📞 ${pdv.tel||'Sin tel.'}</div><div style="display:flex;gap:6px"><div style="flex:1;background:#0a2540;border-radius:6px;padding:6px;text-align:center"><div style="font-size:13px;font-weight:700;color:#00f593;font-family:monospace">Bs.${Number(totalPDV).toFixed(0)}</div><div style="font-size:9px;color:#2e5f80;margin-top:2px">VENTAS</div></div><div style="flex:1;background:#0a2540;border-radius:6px;padding:6px;text-align:center"><div style="font-size:13px;font-weight:700;color:#ffb830;font-family:monospace">${pendPDV}</div><div style="font-size:9px;color:#2e5f80;margin-top:2px">PENDIENTES</div></div></div></div>`);
+    const fotoPopup = pdv.foto
+      ? `<img src="${pdv.foto}" style="width:100%;height:110px;object-fit:cover;border-radius:7px;margin-bottom:8px;cursor:pointer;display:block" onclick="openFotoVisor(${pdv.id})" title="Ver foto en grande">`
+      : '';
+    m.bindPopup(`<div style="min-width:210px">
+      ${fotoPopup}
+      <div style="font-weight:800;font-size:14px;margin-bottom:2px;color:#cce8ff">${pdv.biz_name}</div>
+      <div style="font-size:11px;color:#6a9fc0;margin-bottom:3px">👤 ${pdv.owner_name}</div>
+      <div style="font-size:11px;color:#cce8ff;margin-bottom:2px">📍 ${pdv.dir||''}</div>
+      <div style="font-size:11px;color:#cce8ff;margin-bottom:8px">📞 ${pdv.tel||'Sin tel.'}</div>
+      <div style="display:flex;gap:6px;margin-bottom:8px">
+        <div style="flex:1;background:#0a2540;border-radius:6px;padding:6px;text-align:center">
+          <div style="font-size:13px;font-weight:700;color:#00f593;font-family:monospace">Bs.${Number(totalPDV).toFixed(0)}</div>
+          <div style="font-size:9px;color:#2e5f80;margin-top:2px">VENTAS</div>
+        </div>
+        <div style="flex:1;background:#0a2540;border-radius:6px;padding:6px;text-align:center">
+          <div style="font-size:13px;font-weight:700;color:#ffb830;font-family:monospace">${pendPDV}</div>
+          <div style="font-size:9px;color:#2e5f80;margin-top:2px">PENDIENTES</div>
+        </div>
+      </div>
+      <button onclick="editPDV(${pdv.id})" style="width:100%;padding:7px;background:linear-gradient(135deg,#00b4ff,#06d6f5);border:none;border-radius:7px;font-weight:800;font-size:12px;color:#020d18;cursor:pointer;font-family:Syne,sans-serif">✏ Editar PDV</button>
+    </div>`, {maxWidth:240});
     osmMarkers.push(m);bounds.push([lat,lng]);
   });
   if(bounds.length===1)osmMap.setView(bounds[0],15);else if(bounds.length>1)osmMap.fitBounds(bounds,{padding:[40,40]});
@@ -1245,14 +1285,30 @@ function renderPDVListMap(){
   if(!cache.pdvs.length){el.innerHTML='<div style="text-align:center;padding:24px;color:var(--text3);font-size:13px">Sin puntos registrados</div>';return;}
   el.innerHTML=cache.pdvs.map((pdv,i)=>{
     const tot=cache.ventas.filter(v=>v.pdv_id===pdv.id).reduce((a,v)=>a+Number(v.total),0);
-    return`<div class="card" style="display:flex;align-items:center;gap:10px;cursor:pointer" onclick="focusPDV(${pdv.lat},${pdv.lng},${i})">
-      <div style="width:40px;height:40px;border-radius:9px;overflow:hidden;flex-shrink:0;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:var(--accent);border:1px solid var(--border)">${pdv.foto?`<img src="${pdv.foto}" style="width:100%;height:100%;object-fit:cover">`:pdv.initials||'?'}</div>
-      <div style="flex:1;min-width:0">
-        <div style="font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${pdv.biz_name}</div>
-        <div style="font-size:11px;color:var(--text2);font-family:var(--mono)">Prop: ${pdv.owner_name} · ${pdv.tel||''}</div>
-        <div style="font-size:10px;color:var(--text3)">${pdv.dir||''}</div>
+    const fotoHtml = pdv.foto
+      ? `<div style="width:56px;height:56px;border-radius:10px;overflow:hidden;flex-shrink:0;cursor:pointer;border:2px solid var(--border2);position:relative" onclick="event.stopPropagation();openFotoVisor(${pdv.id})" title="Ver foto en grande">
+           <img src="${pdv.foto}" style="width:100%;height:100%;object-fit:cover">
+           <div style="position:absolute;inset:0;background:rgba(0,0,0,0);display:flex;align-items:center;justify-content:center;transition:.2s;font-size:18px;opacity:0" onmouseover="this.style.opacity=1;this.style.background='rgba(0,0,0,.4)'" onmouseout="this.style.opacity=0;this.style.background='rgba(0,0,0,0)'">🔍</div>
+         </div>`
+      : `<div style="width:56px;height:56px;border-radius:10px;flex-shrink:0;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;color:var(--accent);border:1px solid var(--border)">${pdv.initials||'?'}</div>`;
+    return`<div class="card" style="margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px" onclick="focusPDV(${pdv.lat},${pdv.lng},${i})" style="cursor:pointer">
+        ${fotoHtml}
+        <div style="flex:1;min-width:0;cursor:pointer">
+          <div style="font-weight:800;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${pdv.biz_name}</div>
+          <div style="font-size:11px;color:var(--text2);font-family:var(--mono)">👤 ${pdv.owner_name} · ${pdv.tel||'Sin tel.'}</div>
+          <div style="font-size:10px;color:var(--text3)">📍 ${pdv.dir||''}</div>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:4px">
+            <span class="badge b-blue">${pdv.tipo||''}</span>
+            <span style="font-size:11px;font-weight:700;color:var(--success);font-family:var(--mono)">Bs.${Number(tot).toFixed(0)}</span>
+          </div>
+        </div>
       </div>
-      <div style="text-align:right;flex-shrink:0"><div style="font-size:13px;font-weight:700;color:var(--success);font-family:var(--mono)">Bs.${Number(tot).toFixed(0)}</div><span class="badge b-blue">${pdv.tipo||''}</span></div>
+      <div style="display:flex;gap:7px">
+        ${pdv.foto?`<button class="btn btn-ghost btn-sm" style="flex:1;font-size:11px" onclick="openFotoVisor(${pdv.id})">🔍 Ver foto</button>`:'<div style="flex:1"></div>'}
+        <button class="btn btn-ghost btn-sm" style="flex:1;font-size:11px" onclick="focusPDV(${pdv.lat},${pdv.lng},${i})">🗺 Ver mapa</button>
+        <button class="btn btn-water btn-sm" style="flex:1;font-size:11px" onclick="editPDV(${pdv.id})">✏ Editar</button>
+      </div>
     </div>`;
   }).join('');
 }
@@ -1265,15 +1321,94 @@ function focusPDV(lat,lng,idx){if(osmMap){osmMap.setView([lat,lng],17);osmMarker
 // SAVE PDV
 // ============================================================
 async function savePDV(){
-  const owner=V('pdv-owner').trim(),biz=V('pdv-name').trim(),dir=V('pdv-dir').trim();
-  if(!owner||!biz)return toast('Nombre del propietario y negocio requeridos',true);
-  const record={owner_name:owner,biz_name:biz,tel:V('pdv-tel').trim(),dir,tipo:V('pdv-tipo'),capacidad:parseInt(V('pdv-capacidad'))||100,lat:modalLat||(-16.5+(Math.random()-.5)*.15),lng:modalLng||(-68.15+(Math.random()-.5)*.15),foto:currentPhoto||null,initials:(biz[0]+(biz.split(' ')[1]?.[0]||'')).toUpperCase()};
-  const saved=await dbInsert('pdvs',record);if(!saved)return;
-  closeModal('modal-pdv');resetPDVForm();
-  refreshMarkers();renderPDVListMap();refreshPDVSelect();refreshDash();
-  toast('✓ PDV registrado');
+  const owner=V('pdv-owner').trim(), biz=V('pdv-name').trim(), dir=V('pdv-dir').trim();
+  if(!owner||!biz) return toast('Nombre del propietario y negocio requeridos',true);
+  const editId = V('pdv-edit-id');
+  const initials = (biz[0]+(biz.split(' ')[1]?.[0]||'')).toUpperCase();
+
+  if(editId){
+    // ---- ACTUALIZAR PDV EXISTENTE ----
+    const updates = {
+      owner_name: owner, biz_name: biz,
+      tel: V('pdv-tel').trim(), dir,
+      tipo: V('pdv-tipo'),
+      capacidad: parseInt(V('pdv-capacidad'))||100,
+      initials
+    };
+    // Solo actualizar lat/lng si se capturó nueva ubicación
+    if(modalLat) updates.lat = modalLat;
+    if(modalLng) updates.lng = modalLng;
+    // Solo actualizar foto si se tomó una nueva
+    if(currentPhoto) updates.foto = currentPhoto;
+    const ok = await dbUpdate('pdvs', parseInt(editId), updates);
+    if(!ok) return;
+    closeModal('modal-pdv'); resetPDVForm();
+    refreshMarkers(); renderPDVListMap(); refreshPDVSelect(); refreshDash();
+    toast('✓ PDV actualizado');
+  } else {
+    // ---- NUEVO PDV ----
+    const record = {
+      owner_name:owner, biz_name:biz,
+      tel: V('pdv-tel').trim(), dir,
+      tipo: V('pdv-tipo'),
+      capacidad: parseInt(V('pdv-capacidad'))||100,
+      lat: modalLat||(-16.5+(Math.random()-.5)*.15),
+      lng: modalLng||(-68.15+(Math.random()-.5)*.15),
+      foto: currentPhoto||null, initials
+    };
+    const saved = await dbInsert('pdvs', record); if(!saved) return;
+    closeModal('modal-pdv'); resetPDVForm();
+    refreshMarkers(); renderPDVListMap(); refreshPDVSelect(); refreshDash();
+    toast('✓ PDV registrado');
+  }
 }
-function resetPDVForm(){['pdv-owner','pdv-name','pdv-tel','pdv-dir','pdv-capacidad'].forEach(id=>{const e=EL(id);if(e)e.value='';});EL('modal-gps-coord').textContent='Sin ubicación capturada';EL('modal-gps-led').classList.remove('on');const zone=EL('photo-zone');const img=zone.querySelector('img');if(img)img.remove();zone.querySelector('.photo-zone-ico').style.display='';zone.querySelector('.photo-zone-txt').style.display='';modalLat=null;modalLng=null;currentPhoto=null;}
+
+function editPDV(pdvId){
+  const pdv = cache.pdvs.find(p=>p.id===pdvId); if(!pdv) return;
+  // Fill modal with existing data
+  EL('modal-pdv-title').textContent = '✏ Editar Punto de Venta';
+  EL('pdv-edit-id').value  = pdvId;
+  EL('pdv-owner').value    = pdv.owner_name||'';
+  EL('pdv-name').value     = pdv.biz_name||'';
+  EL('pdv-tel').value      = pdv.tel||'';
+  EL('pdv-dir').value      = pdv.dir||'';
+  EL('pdv-tipo').value     = pdv.tipo||'Tienda de barrio';
+  EL('pdv-capacidad').value= pdv.capacidad||100;
+  // Show current GPS
+  if(pdv.lat&&pdv.lng){
+    EL('modal-gps-coord').textContent = Number(pdv.lat).toFixed(5)+', '+Number(pdv.lng).toFixed(5);
+    EL('modal-gps-acc').textContent   = 'Ubicación guardada — presiona Ubicar para actualizar';
+    EL('modal-gps-led').classList.add('on');
+    modalLat = null; modalLng = null; // only override if user presses Ubicar
+  }
+  // Show current photo
+  if(pdv.foto){
+    const zone = EL('photo-zone');
+    let img = zone.querySelector('img');
+    if(!img){ img=document.createElement('img'); zone.appendChild(img); }
+    img.src = pdv.foto;
+    zone.querySelector('.photo-zone-ico').style.display='none';
+    zone.querySelector('.photo-zone-txt').style.display='none';
+    currentPhoto = null; // only override if user takes new photo
+  }
+  // Close map popup if open
+  if(osmMap) osmMap.closePopup();
+  openModal('modal-pdv');
+}
+
+function resetPDVForm(){
+  EL('modal-pdv-title').textContent = '📍 Nuevo Punto de Venta';
+  EL('pdv-edit-id').value = '';
+  ['pdv-owner','pdv-name','pdv-tel','pdv-dir','pdv-capacidad'].forEach(id=>{const e=EL(id);if(e)e.value='';});
+  EL('modal-gps-coord').textContent='Sin ubicación capturada';
+  EL('modal-gps-acc').textContent='Presiona Ubicar';
+  EL('modal-gps-led').classList.remove('on');
+  const zone=EL('photo-zone');
+  const img=zone.querySelector('img'); if(img) img.remove();
+  zone.querySelector('.photo-zone-ico').style.display='';
+  zone.querySelector('.photo-zone-txt').style.display='';
+  modalLat=null; modalLng=null; currentPhoto=null;
+}
 
 // ============================================================
 // VENTAS
@@ -1385,6 +1520,22 @@ async function marcarEntregado(id){
 }
 
 
+
+// ============================================================
+// FOTO VISOR — ver foto PDV en grande
+// ============================================================
+function openFotoVisor(pdvId){
+  const pdv = cache.pdvs.find(p=>p.id===pdvId); if(!pdv||!pdv.foto) return;
+  EL('foto-visor-img').src      = pdv.foto;
+  EL('foto-visor-name').textContent = pdv.biz_name;
+  EL('foto-visor-sub').textContent  = pdv.owner_name+' · '+( pdv.dir||'');
+  EL('foto-visor').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeFotoVisor(){
+  EL('foto-visor').classList.remove('open');
+  document.body.style.overflow = '';
+}
 // ============================================================
 // VENTAS DEL DÍA — REGISTRO POR PDV
 // ============================================================
