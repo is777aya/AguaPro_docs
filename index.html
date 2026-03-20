@@ -531,6 +531,7 @@ textarea.finput{resize:vertical;min-height:70px;line-height:1.5}
         <div class="metric water"><div class="m-label">Sachet vendidos</div><div class="m-val blue" id="vd-sachets">0</div></div>
       </div>
       <div id="vd-boni-resumen"></div>
+      <button class="btn btn-ghost btn-full" style="margin-bottom:12px;font-size:12px" onclick="abrirNotaVenta('dia')"><svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14" style="margin-right:2px"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg> 📋 Generar nota resumen del día · Enviar por WhatsApp</button>
       <div id="vd-list"><div style="text-align:center;padding:28px;color:var(--text3);font-size:13px">Selecciona una fecha para ver ventas</div></div>
     </div>
   </div>
@@ -690,6 +691,52 @@ textarea.finput{resize:vertical;min-height:70px;line-height:1.5}
   </div>
 </div>
 
+
+
+<!-- MODAL NOTA DE VENTA -->
+<div class="modal-overlay" id="modal-nota-venta" onclick="closeModalOut(event,'modal-nota-venta')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+      <div class="modal-title" style="margin-bottom:0">📋 Nota de Venta</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-sm btn-ghost" onclick="copyNota()" title="Copiar texto">📋 Copiar</button>
+        <button class="btn btn-sm" style="background:linear-gradient(135deg,#25d366,#128c7e);color:#fff;font-weight:800;font-size:13px" onclick="enviarWhatsApp()">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="15" height="15"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          WhatsApp
+        </button>
+      </div>
+    </div>
+
+    <!-- SELECTOR TIPO DE NOTA -->
+    <div class="tabs" style="margin-bottom:16px">
+      <div class="tab active" onclick="switchTab(this,'nota-pdv-tab');renderNotaPDV()">Por PDV</div>
+      <div class="tab" onclick="switchTab(this,'nota-dia-tab');renderNotaDia()">Resumen día</div>
+    </div>
+
+    <!-- NOTA POR PDV -->
+    <div id="nota-pdv-tab">
+      <div class="fg" style="margin-bottom:12px">
+        <label class="flabel">Seleccionar PDV</label>
+        <select class="finput" id="nota-pdv-sel" onchange="renderNotaPDV()">
+          <option value="">-- Seleccionar PDV --</option>
+        </select>
+      </div>
+      <div id="nota-pdv-preview" style="background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r2);padding:14px;font-family:var(--mono);font-size:12px;color:var(--text);white-space:pre-wrap;line-height:1.7;min-height:120px;max-height:420px;overflow-y:auto"></div>
+    </div>
+
+    <!-- NOTA RESUMEN DÍA -->
+    <div id="nota-dia-tab" style="display:none">
+      <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center">
+        <input type="date" class="finput" id="nota-fecha" style="flex:1">
+        <button class="btn btn-sm btn-ghost" onclick="renderNotaDia()">Ver</button>
+      </div>
+      <div id="nota-dia-preview" style="background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r2);padding:14px;font-family:var(--mono);font-size:12px;color:var(--text);white-space:pre-wrap;line-height:1.7;min-height:120px;max-height:420px;overflow-y:auto"></div>
+    </div>
+
+    <button class="btn btn-ghost btn-full" style="margin-top:12px" onclick="closeModal('modal-nota-venta')">Cerrar</button>
+  </div>
+</div>
 
 <!-- MODAL CONFIG -->
 <div class="modal-overlay" id="modal-config" onclick="closeModalOut(event,'modal-config')">
@@ -1300,6 +1347,15 @@ function showVentaDetalle(denc){
     </div>
     <div class="card-title" style="margin-bottom:8px">Entregas del día</div>
     <div class="card">${pdv.ventas.map(v=>`<div class="li"><div style="flex:1"><div style="font-size:13px;font-weight:700">${fmtNum(v.qty)} sachet · Bs.${Number(v.precio).toFixed(2)}c/u</div>${v.bonificacion>0?`<div style="font-size:11px;color:var(--warn);font-family:var(--mono);margin-top:2px">🎁 ${v.bonificacion} bonif. · costo: Bs.${Number(v.total_boni||0).toFixed(2)}</div>`:''}<div style="font-size:11px;color:var(--text2);font-family:var(--mono)">${locTime(v.created_at)}${v.notas?' · '+v.notas:''}</div></div><div style="text-align:right"><span class="badge b-green">${fmtBs(v.total)}</span>${v.bonificacion>0?`<div style="font-size:10px;color:var(--warn);margin-top:3px">+${v.bonificacion} 🎁</div>`:''}</div></div>`).join('')}</div>`;
+  // Add WA button
+  const detBody = EL('modal-pdv-detail-body');
+  const waBtn = document.createElement('button');
+  waBtn.className='btn btn-full';
+  waBtn.style.cssText='margin-top:14px;background:linear-gradient(135deg,#25d366,#128c7e);color:#fff;font-weight:800';
+  waBtn.innerHTML='<svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg> Enviar nota por WhatsApp';
+  waBtn.onclick = () => { const denc2 = document.querySelector('#modal-pdv-detail-body').dataset.pdvenc; abrirNotaVenta('pdv', denc2); };
+  detBody.dataset.pdvenc = denc;
+  detBody.appendChild(waBtn);
   openModal('modal-pdv-detail');
 }
 
@@ -1592,6 +1648,254 @@ function toggleBoni(){
   if(thumb) thumb.style.left    = boniActiva ? '18px' : '2px';
   renderPDVVentaCards();
   toast(boniActiva ? '🎁 Bonificación activada' : 'Bonificación desactivada');
+}
+
+// ============================================================
+// NOTA DE VENTA — GENERACIÓN Y WHATSAPP
+// ============================================================
+let notaTextoActual = '';
+
+function abrirNotaVenta(tipo, denc){
+  // Populate pdv selector
+  const sel = EL('nota-pdv-sel');
+  if(sel) sel.innerHTML = '<option value="">-- Seleccionar PDV --</option>' +
+    cache.pdvs.map(p=>`<option value="${p.id}">${p.biz_name}</option>`).join('');
+
+  // Set date
+  const nf = EL('nota-fecha');
+  if(nf && !nf.value) nf.value = new Date().toISOString().slice(0,10);
+
+  if(tipo==='pdv' && denc){
+    const pdvData = JSON.parse(decodeURIComponent(denc));
+    // Select the PDV in dropdown
+    if(sel){
+      // find by name match
+      const opt = Array.from(sel.options).find(o=>o.text===pdvData.name);
+      if(opt) sel.value = opt.value;
+    }
+    // Switch to PDV tab
+    const tab = EL('nota-pdv-tab');
+    const tab2 = EL('nota-dia-tab');
+    if(tab) tab.style.display='block';
+    if(tab2) tab2.style.display='none';
+    document.querySelectorAll('#modal-nota-venta .tab').forEach((t,i)=>{t.classList.toggle('active',i===0);});
+    renderNotaPDV(pdvData);
+  } else if(tipo==='dia'){
+    const tab = EL('nota-pdv-tab');
+    const tab2 = EL('nota-dia-tab');
+    if(tab) tab.style.display='none';
+    if(tab2) tab2.style.display='block';
+    document.querySelectorAll('#modal-nota-venta .tab').forEach((t,i)=>{t.classList.toggle('active',i===1);});
+    renderNotaDia();
+  }
+  openModal('modal-nota-venta');
+}
+
+function buildNotaPDVText(pdvData){
+  const pi    = cache.pdvs.find(p=>p.id==pdvData.id||p.biz_name===pdvData.name);
+  const fecha = new Date().toLocaleDateString('es-BO',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+  const hora  = new Date().toLocaleTimeString('es-BO',{hour:'2-digit',minute:'2-digit'});
+  const boniTotal   = pdvData.ventas.reduce((a,v)=>a+(v.bonificacion||0),0);
+  const costoBoni   = pdvData.ventas.reduce((a,v)=>a+Number(v.total_boni||0),0);
+  const totalVenta  = pdvData.ventas.reduce((a,v)=>a+Number(v.total),0);
+  const totalGeneral = totalVenta + costoBoni;
+  const pago = pdvData.ventas[0]?.pago || 'efectivo';
+  const pagoEmoji = pago==='efectivo'?'💵':pago==='qr'?'📲':'📋';
+
+  let txt = '';
+  txt += `💧 *SOMOS AGUA*
+`;
+  txt += `🧾 *NOTA DE VENTA*
+`;
+  txt += `${'─'.repeat(30)}
+`;
+  txt += `📅 ${fecha}
+`;
+  txt += `🕐 ${hora}
+`;
+  txt += `${'─'.repeat(30)}
+`;
+  txt += `🏪 *${pdvData.name}*
+`;
+  if(pi?.owner_name) txt += `👤 Prop: ${pi.owner_name}
+`;
+  if(pi?.dir)        txt += `📍 ${pi.dir}
+`;
+  if(pi?.tel)        txt += `📞 ${pi.tel}
+`;
+  txt += `${'─'.repeat(30)}
+`;
+  txt += `*DETALLE:*
+`;
+  pdvData.ventas.forEach(v=>{
+    txt += `  • ${fmtNum(v.qty)} sachet × Bs.${Number(v.precio).toFixed(2)} = *${fmtBs(v.total)}*
+`;
+    if(v.bonificacion>0){
+      txt += `    🎁 Bonif: ${v.bonificacion} sachet × Bs.${Number(v.precio_boni||v.precio).toFixed(2)} = ${fmtBs(v.total_boni||0)}
+`;
+    }
+  });
+  txt += `${'─'.repeat(30)}
+`;
+  txt += `📦 Sachet entregados: *${fmtNum(pdvData.sachets)}*
+`;
+  if(boniTotal>0){
+    txt += `🎁 Bonificación: *${boniTotal} sachet* (Bs.${costoBoni.toFixed(2)})
+`;
+    txt += `📦 Total sachet (incl.bonif.): *${fmtNum(pdvData.sachets+boniTotal)}*
+`;
+  }
+  txt += `${'─'.repeat(30)}
+`;
+  txt += `💰 Subtotal venta:   *${fmtBs(totalVenta)}*
+`;
+  if(boniTotal>0)
+    txt += `🎁 Costo bonificación: *${fmtBs(costoBoni)}*
+`;
+  txt += `✅ *TOTAL A COBRAR: ${fmtBs(totalGeneral)}*
+`;
+  txt += `${'─'.repeat(30)}
+`;
+  txt += `${pagoEmoji} Pago: ${pago.charAt(0).toUpperCase()+pago.slice(1)}
+`;
+  if(pdvData.ventas[0]?.notas) txt += `📝 Nota: ${pdvData.ventas[0].notas}
+`;
+  txt += `${'─'.repeat(30)}
+`;
+  txt += `_Gracias por su preferencia_ 💧`;
+  return txt;
+}
+
+function buildNotaDiaText(fecha){
+  const dt  = fecha || EL('nota-fecha')?.value || new Date().toISOString().slice(0,10);
+  const ds  = new Date(dt+'T00:00:00').toDateString();
+  const dStr= new Date(dt+'T00:00:00').toLocaleDateString('es-BO',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+  const ventasDelDia = cache.ventas.filter(v=>{
+    const byC=new Date(v.created_at).toDateString()===ds;
+    const byF=v.fecha_entrega===dt;
+    return (byC||byF)&&v.status==='entregado';
+  });
+
+  if(!ventasDelDia.length) return `💧 *SOMOS AGUA*
+📅 ${dStr}
+
+Sin ventas registradas para esta fecha.`;
+
+  // Group by PDV
+  const pdvMap={};
+  ventasDelDia.forEach(v=>{
+    const k=v.pdv_id||'libre', nm=v.pdv_name||'Venta libre';
+    if(!pdvMap[k]) pdvMap[k]={name:nm,sachets:0,total:0,boni:0,costoBoni:0,pago:v.pago||'efectivo'};
+    pdvMap[k].sachets   += v.qty;
+    pdvMap[k].total     += Number(v.total);
+    pdvMap[k].boni      += v.bonificacion||0;
+    pdvMap[k].costoBoni += Number(v.total_boni||0);
+    pdvMap[k].pago       = v.pago||pdvMap[k].pago;
+  });
+  const lista  = Object.values(pdvMap).sort((a,b)=>b.total-a.total);
+  const totGen = lista.reduce((a,p)=>a+p.total+p.costoBoni,0);
+  const totSac = lista.reduce((a,p)=>a+p.sachets,0);
+  const totBon = lista.reduce((a,p)=>a+p.boni,0);
+  const totCosB= lista.reduce((a,p)=>a+p.costoBoni,0);
+
+  let txt='';
+  txt += `💧 *SOMOS AGUA*
+`;
+  txt += `📊 *RESUMEN DE VENTAS*
+`;
+  txt += `${'─'.repeat(30)}
+`;
+  txt += `📅 ${dStr}
+`;
+  txt += `${'─'.repeat(30)}
+`;
+  lista.forEach((p,i)=>{
+    const pagoEmoji = p.pago==='efectivo'?'💵':p.pago==='qr'?'📲':'📋';
+    txt += `*${i+1}. ${p.name}*
+`;
+    txt += `   📦 ${fmtNum(p.sachets)} sachet → *${fmtBs(p.total)}*
+`;
+    if(p.boni>0)
+      txt += `   🎁 ${p.boni} bonif. → ${fmtBs(p.costoBoni)}
+`;
+    txt += `   ${pagoEmoji} ${p.pago}
+`;
+  });
+  txt += `${'─'.repeat(30)}
+`;
+  txt += `📦 Total sachet: *${fmtNum(totSac)}*
+`;
+  if(totBon>0){
+    txt += `🎁 Total bonif.: *${totBon} sachet* (${fmtBs(totCosB)})
+`;
+    txt += `📦 Sachet totales (incl.): *${fmtNum(totSac+totBon)}*
+`;
+  }
+  txt += `${'─'.repeat(30)}
+`;
+  txt += `💰 Venta total:      *${fmtBs(totGen-totCosB)}*
+`;
+  if(totBon>0)
+    txt += `🎁 Bonificaciones:   *${fmtBs(totCosB)}*
+`;
+  txt += `✅ *TOTAL JORNADA: ${fmtBs(totGen)}*
+`;
+  txt += `📍 PDVs visitados: *${lista.length}*
+`;
+  txt += `${'─'.repeat(30)}
+`;
+  txt += `_SOMOS AGUA — Sistema de distribución_ 💧`;
+  return txt;
+}
+
+function renderNotaPDV(pdvDataOverride){
+  const prev = EL('nota-pdv-preview'); if(!prev) return;
+  let pdvData = pdvDataOverride;
+  if(!pdvData){
+    const pdvId = V('nota-pdv-sel');
+    if(!pdvId){ prev.textContent='Selecciona un PDV para generar la nota.'; return; }
+    // Build from cache
+    const hoy = new Date().toISOString().slice(0,10);
+    const ds  = new Date(hoy+'T00:00:00').toDateString();
+    const ventas = cache.ventas.filter(v=>v.pdv_id==pdvId&&new Date(v.created_at).toDateString()===ds&&v.status==='entregado');
+    if(!ventas.length){ prev.textContent='Sin ventas registradas hoy para este PDV.'; notaTextoActual=''; return; }
+    const pdv = cache.pdvs.find(p=>p.id==pdvId);
+    pdvData = { id:parseInt(pdvId), name:pdv.biz_name, sachets:ventas.reduce((a,v)=>a+v.qty,0), total:ventas.reduce((a,v)=>a+Number(v.total),0), ventas };
+  }
+  notaTextoActual = buildNotaPDVText(pdvData);
+  prev.textContent = notaTextoActual;
+}
+
+function renderNotaDia(){
+  const prev = EL('nota-dia-preview'); if(!prev) return;
+  notaTextoActual = buildNotaDiaText();
+  prev.textContent = notaTextoActual;
+}
+
+function enviarWhatsApp(){
+  if(!notaTextoActual){ toast('Genera una nota primero', true); return; }
+  const encoded = encodeURIComponent(notaTextoActual);
+  const url = `https://wa.me/?text=${encoded}`;
+  window.open(url, '_blank');
+}
+
+function copyNota(){
+  if(!notaTextoActual){ toast('Genera una nota primero', true); return; }
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(notaTextoActual)
+      .then(()=>toast('✓ Nota copiada al portapapeles'))
+      .catch(()=>fallbackCopy());
+  } else { fallbackCopy(); }
+}
+
+function fallbackCopy(){
+  const ta = document.createElement('textarea');
+  ta.value = notaTextoActual;
+  ta.style.position='fixed'; ta.style.opacity='0';
+  document.body.appendChild(ta); ta.select();
+  document.execCommand('copy');
+  document.body.removeChild(ta);
+  toast('✓ Nota copiada al portapapeles');
 }
 // ============================================================
 // DASHBOARD
