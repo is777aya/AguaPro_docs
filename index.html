@@ -334,6 +334,7 @@ textarea.finput{resize:vertical;min-height:70px;line-height:1.5}
   <div id="tp-reg">
     <div class="card">
       <div class="card-title">📦 Nuevo Lote de Producción</div>
+      <div class="fg"><label class="flabel">Fecha del lote</label><input type="date" class="finput" id="p-fecha"></div>
       <div class="fg"><label class="flabel">Cantidad producida (sachet)</label><input type="number" class="finput" id="p-qty" placeholder="Ej: 500" min="1"></div>
       <div class="fg"><label class="flabel">Hora de inicio</label><input type="time" class="finput" id="p-hora" value="08:00"></div>
       <div class="fg"><label class="flabel">Hora de fin</label><input type="time" class="finput" id="p-hora-fin" value="09:00"></div>
@@ -371,6 +372,7 @@ textarea.finput{resize:vertical;min-height:70px;line-height:1.5}
   <div id="tp-perd" style="display:none">
     <div class="card">
       <div class="card-title">⚠ Registrar Pérdida</div>
+      <div class="fg"><label class="flabel">Fecha</label><input type="date" class="finput" id="perd-fecha"></div>
       <div class="fg"><label class="flabel">Cantidad perdida (sachet)</label><input type="number" class="finput" id="perd-qty" placeholder="0" min="1"></div>
       <div class="fg"><label class="flabel">Motivo</label>
         <select class="finput" id="perd-motivo">
@@ -386,7 +388,13 @@ textarea.finput{resize:vertical;min-height:70px;line-height:1.5}
       <div class="fg"><label class="flabel">Descripción</label><textarea class="finput" id="perd-desc" placeholder="Detalles de la pérdida..." rows="2"></textarea></div>
       <button class="btn btn-danger btn-full" onclick="savePerdida()">Registrar Pérdida</button>
     </div>
-    <div class="card-title" style="margin-bottom:10px">Historial de pérdidas</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div class="card-title" style="margin-bottom:0">Historial de pérdidas</div>
+      <div style="display:flex;gap:7px;align-items:center">
+        <input type="date" class="finput" id="perd-hist-date" style="height:34px;font-size:12px;padding:6px 10px">
+        <button class="btn btn-sm btn-ghost" onclick="renderPerdidasHist()">Ver</button>
+      </div>
+    </div>
     <div id="perd-hist"><div style="text-align:center;padding:24px;color:var(--text3);font-size:13px">Sin pérdidas registradas</div></div>
   </div>
 
@@ -415,12 +423,29 @@ textarea.finput{resize:vertical;min-height:70px;line-height:1.5}
         <div style="display:flex;gap:8px"><input type="number" class="finput" id="stock-max-input" placeholder="10000" style="flex:1"><button class="btn btn-sm btn-ghost" onclick="updateStockMax()">Guardar</button></div>
       </div>
     </div>
+    <!-- AJUSTE MANUAL DE STOCK -->
+    <div class="card">
+      <div class="card-title">🔧 Ajuste manual de stock</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Usa esto para corregir el stock actual si hay diferencias con el inventario físico.</div>
+      <div style="display:flex;gap:8px;align-items:flex-end">
+        <div class="fg" style="flex:1;margin-bottom:0"><label class="flabel">Nuevo stock real (sachet)</label><input type="number" class="finput" id="stock-ajuste-val" placeholder="0" min="0"></div>
+        <div class="fg" style="flex:1;margin-bottom:0"><label class="flabel">Motivo</label><input type="text" class="finput" id="stock-ajuste-motivo" placeholder="Ej: Inventario físico"></div>
+      </div>
+      <button class="btn btn-warn btn-full" style="margin-top:10px" onclick="saveStockAjuste()">💾 Aplicar ajuste de stock</button>
+    </div>
     <!-- CHART 7 DÍAS -->
     <div class="card">
       <div class="card-title">Producción vs Ventas (7 días)</div>
+      <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center">
+        <input type="date" class="finput" id="stock-chart-fecha" style="flex:1;height:34px;font-size:12px;padding:6px 10px">
+        <button class="btn btn-sm btn-ghost" onclick="refreshStockTab()">Ver</button>
+      </div>
       <div class="barchart" id="stock-week-chart"></div>
       <div class="barlabels" id="stock-week-labels"></div>
     </div>
+    <!-- HISTORIAL AJUSTES -->
+    <div class="card-title" style="margin-bottom:10px;margin-top:4px">Historial de ajustes</div>
+    <div id="stock-ajustes-hist"><div style="text-align:center;padding:14px;color:var(--text3);font-size:13px">Sin ajustes registrados</div></div>
   </div>
 </div>
 
@@ -715,6 +740,47 @@ textarea.finput{resize:vertical;min-height:70px;line-height:1.5}
 </div>
 
 
+
+<!-- MODAL EDITAR PRODUCCIÓN -->
+<div class="modal-overlay" id="modal-edit-prod" onclick="closeModalOut(event,'modal-edit-prod')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">✏ Editar Lote de Producción</div>
+    <input type="hidden" id="mep-id">
+    <div class="fg"><label class="flabel">Cantidad (sachet)</label><input type="number" class="finput" id="mep-qty" min="1" inputmode="numeric"></div>
+    <div class="fg"><label class="flabel">Fecha</label><input type="date" class="finput" id="mep-fecha"></div>
+    <div class="fg"><label class="flabel">Hora inicio</label><input type="time" class="finput" id="mep-hora-ini"></div>
+    <div class="fg"><label class="flabel">Hora fin</label><input type="time" class="finput" id="mep-hora-fin"></div>
+    <div class="fg"><label class="flabel">Operario</label><input type="text" class="finput" id="mep-operario" placeholder="Nombre del operario"></div>
+    <div class="fg"><label class="flabel">Observaciones</label><textarea class="finput" id="mep-obs" rows="2"></textarea></div>
+    <button class="btn btn-water btn-full" onclick="saveEditProd()">💧 Guardar cambios</button>
+    <button class="btn btn-danger btn-full" style="margin-top:8px" onclick="deleteRecord('produccion',EL('mep-id').value,'modal-edit-prod')">🗑 Eliminar este lote</button>
+    <button class="btn btn-ghost btn-full" style="margin-top:8px" onclick="closeModal('modal-edit-prod')">Cancelar</button>
+  </div>
+</div>
+
+<!-- MODAL EDITAR PÉRDIDA -->
+<div class="modal-overlay" id="modal-edit-perd" onclick="closeModalOut(event,'modal-edit-perd')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">✏ Editar Pérdida</div>
+    <input type="hidden" id="mepr-id">
+    <div class="fg"><label class="flabel">Cantidad (sachet)</label><input type="number" class="finput" id="mepr-qty" min="1" inputmode="numeric"></div>
+    <div class="fg"><label class="flabel">Fecha</label><input type="date" class="finput" id="mepr-fecha"></div>
+    <div class="fg"><label class="flabel">Motivo</label>
+      <select class="finput" id="mepr-motivo">
+        <option>Rotura de sachet</option><option>Falla de sellado</option>
+        <option>Contaminación</option><option>Falla de máquina</option>
+        <option>Pérdida en transporte</option><option>Vencimiento</option><option>Otro</option>
+      </select>
+    </div>
+    <div class="fg"><label class="flabel">Descripción</label><textarea class="finput" id="mepr-desc" rows="2"></textarea></div>
+    <button class="btn btn-water btn-full" onclick="saveEditPerd()">💧 Guardar cambios</button>
+    <button class="btn btn-danger btn-full" style="margin-top:8px" onclick="deleteRecord('perdidas',EL('mepr-id').value,'modal-edit-perd')">🗑 Eliminar registro</button>
+    <button class="btn btn-ghost btn-full" style="margin-top:8px" onclick="closeModal('modal-edit-perd')">Cancelar</button>
+  </div>
+</div>
+
 <!-- MODAL EDITAR VENTA PDV -->
 <div class="modal-overlay" id="modal-edit-venta" onclick="closeModalOut(event,'modal-edit-venta')">
   <div class="modal">
@@ -964,7 +1030,7 @@ function startApp(){hideLoad();EL('setup-screen').style.display='none';EL('main-
   if(SB&&isOnline){SB.from('route_history').select('*').order('id',{ascending:false}).limit(50).then(({data})=>{if(data)cache.route_history=data;});}
 const d=new Date();EL('date-pill').textContent=d.toLocaleDateString('es-BO',{day:'2-digit',month:'short'});
 EL('vd-fecha').value=d.toISOString().slice(0,10);EL('p-hist-date').value=d.toISOString().slice(0,10);EL('pv-fecha').value=d.toISOString().slice(0,10);
-refreshProdLive();buildQuickHours();refreshPDVSelect();renderPedidos('pendiente');refreshStockTab();initVentaDia();}
+refreshProdLive();buildQuickHours();refreshPDVSelect();renderPedidos('pendiente');refreshStockTab();initVentaDia();renderStockAjustes();renderPerdidasHist();}
 
 // ============================================================
 // HELPERS
@@ -1182,20 +1248,30 @@ function handlePhoto(e){const file=e.target.files[0];if(!file)return;const img=n
 async function saveProduccion(){
   const qty=parseInt(V('p-qty'))||0;
   if(qty<=0)return toast('Cantidad requerida',true);
-  const record={qty,hora_inicio:V('p-hora'),hora_fin:V('p-hora-fin'),operario:V('p-operario'),obs:V('p-obs')};
+  const fechaSel = V('p-fecha') || new Date().toISOString().slice(0,10);
+  // Build created_at with selected date + current time
+  const now = new Date();
+  const [fy,fm,fd] = fechaSel.split('-').map(Number);
+  const created_at = new Date(fy,fm-1,fd,now.getHours(),now.getMinutes(),now.getSeconds()).toISOString();
+  const record={qty,hora_inicio:V('p-hora'),hora_fin:V('p-hora-fin'),operario:V('p-operario'),obs:V('p-obs'),created_at};
   const saved=await dbInsert('produccion',record);if(!saved)return;
   EL('p-qty').value='';EL('p-obs').value='';
   refreshProdLive();refreshStockTab();
-  toast('✓ '+fmtNum(qty)+' sachet registrados');
+  if(fechaSel!==new Date().toISOString().slice(0,10)) loadProdHistorial(); // refresh if past date
+  toast('✓ '+fmtNum(qty)+' sachet registrados ('+fechaSel+')');
 }
 
 async function savePerdida(){
   const qty=parseInt(V('perd-qty'))||0;
   if(qty<=0)return toast('Cantidad requerida',true);
-  const saved=await dbInsert('perdidas',{qty,motivo:V('perd-motivo'),descripcion:V('perd-desc')});if(!saved)return;
+  const fechaSel = V('perd-fecha') || new Date().toISOString().slice(0,10);
+  const now = new Date();
+  const [fy,fm,fd] = fechaSel.split('-').map(Number);
+  const created_at = new Date(fy,fm-1,fd,now.getHours(),now.getMinutes(),now.getSeconds()).toISOString();
+  const saved=await dbInsert('perdidas',{qty,motivo:V('perd-motivo'),descripcion:V('perd-desc'),created_at});if(!saved)return;
   EL('perd-qty').value='';EL('perd-desc').value='';
   refreshProdLive();refreshStockTab();renderPerdidasHist();
-  toast('⚠ Pérdida de '+qty+' sachet registrada');
+  toast('⚠ Pérdida de '+qty+' sachet registrada ('+fechaSel+')');
 }
 
 function refreshProdLive(){
@@ -1247,13 +1323,21 @@ function loadProdHistorial(){
   EL('prod-hour-labels').innerHTML=hours.map(h=>`<div style="flex:1;text-align:center;font-size:9px;color:var(--text3);font-family:var(--mono)">${h}h</div>`).join('');
   // List
   if(!prods.length){EL('prod-hist-list').innerHTML='<div style="text-align:center;padding:24px;color:var(--text3);font-size:13px">Sin producción para esta fecha</div>';return;}
-  EL('prod-hist-list').innerHTML='<div class="card">'+[...prods].reverse().map(p=>`<div class="li"><div class="li-avatar" style="background:rgba(124,58,237,.15);color:#a78bfa">📦</div><div class="li-info"><div class="li-name">${fmtNum(p.qty)} sachet</div><div class="li-sub">${p.hora_inicio||''}→${p.hora_fin||''} · ${p.operario||'Sin operario'}</div></div><span class="badge b-purple">+${fmtNum(p.qty)}</span></div>`).join('')+'</div>';
+  EL('prod-hist-list').innerHTML='<div class="card">'+[...prods].reverse().map(p=>`<div class="li"><div class="li-avatar" style="background:rgba(124,58,237,.15);color:#a78bfa">📦</div><div class="li-info"><div class="li-name">${fmtNum(p.qty)} sachet</div><div class="li-sub">${locDate(p.created_at)} · ${p.hora_inicio||''}→${p.hora_fin||''} · ${p.operario||'Sin operario'}</div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px"><span class="badge b-purple">+${fmtNum(p.qty)}</span><button onclick="openEditProd(${p.id})" style="font-size:10px;padding:2px 8px;background:rgba(0,180,255,.1);border:1px solid rgba(0,180,255,.3);border-radius:5px;color:var(--accent);cursor:pointer;font-weight:700">&#9998; editar</button></div></div>`).join('')+'</div>';
 }
 
 function renderPerdidasHist(){
   const el=EL('perd-hist');if(!el)return;
-  if(!cache.perdidas.length){el.innerHTML='<div style="text-align:center;padding:24px;color:var(--text3);font-size:13px">Sin pérdidas registradas</div>';return;}
-  el.innerHTML='<div class="card">'+[...cache.perdidas].reverse().slice(0,15).map(p=>`<div class="li"><div class="li-avatar" style="background:rgba(255,69,96,.1);color:var(--danger)">⚠</div><div class="li-info"><div class="li-name">${fmtNum(p.qty)} sachet perdidos</div><div class="li-sub">${p.motivo} · ${locDate(p.created_at)}</div></div><span class="badge b-red">-${p.qty}</span></div>`).join('')+'</div>';
+  const dtFilt = V('perd-hist-date');
+  let data = [...cache.perdidas].reverse();
+  if(dtFilt){
+    const ds = new Date(dtFilt+'T00:00:00').toDateString();
+    data = data.filter(p=>new Date(p.created_at).toDateString()===ds);
+  }
+  if(!data.length){el.innerHTML='<div style="text-align:center;padding:24px;color:var(--text3);font-size:13px">Sin pérdidas'+(dtFilt?' para esta fecha':'')+' registradas</div>';return;}
+  const totalFilt = data.reduce((a,p)=>a+p.qty,0);
+  el.innerHTML=`<div style="background:rgba(255,69,96,.08);border:1px solid rgba(255,69,96,.2);border-radius:var(--r2);padding:10px 13px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:var(--text2)">Total filtrado</span><span style="font-size:18px;font-weight:800;font-family:var(--mono);color:var(--danger)">${fmtNum(totalFilt)} sachet</span></div>`+
+    '<div class="card">'+data.slice(0,20).map(p=>`<div class="li"><div class="li-avatar" style="background:rgba(255,69,96,.1);color:var(--danger)">⚠</div><div class="li-info"><div class="li-name">${fmtNum(p.qty)} sachet perdidos</div><div class="li-sub">${p.motivo} · ${locDate(p.created_at)}</div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px"><span class="badge b-red">-${p.qty}</span><button onclick="openEditPerd(${p.id})" style="font-size:10px;padding:2px 8px;background:rgba(255,69,96,.1);border:1px solid rgba(255,69,96,.3);border-radius:5px;color:var(--danger);cursor:pointer;font-weight:700">&#9998;</button></div></div>`).join('')+'</div>';
 }
 
 function refreshStockTab(){
@@ -2158,6 +2242,139 @@ async function confirmDeleteVenta(){
   renderPDVVentaCards();
   toast('🗑 Venta eliminada');
 }
+
+// ============================================================
+// EDITAR / ELIMINAR PRODUCCIÓN Y PÉRDIDAS
+// ============================================================
+function openEditProd(id){
+  const p = cache.produccion.find(x=>x.id===id); if(!p) return;
+  EL('mep-id').value       = id;
+  EL('mep-qty').value      = p.qty;
+  EL('mep-fecha').value    = p.created_at ? p.created_at.slice(0,10) : new Date().toISOString().slice(0,10);
+  EL('mep-hora-ini').value = p.hora_inicio||'08:00';
+  EL('mep-hora-fin').value = p.hora_fin||'09:00';
+  EL('mep-operario').value = p.operario||'';
+  EL('mep-obs').value      = p.obs||'';
+  openModal('modal-edit-prod');
+}
+
+async function saveEditProd(){
+  const id  = parseInt(EL('mep-id').value);
+  const qty = parseInt(EL('mep-qty').value)||0;
+  if(qty<=0) return toast('La cantidad debe ser mayor a 0',true);
+  const fechaSel = EL('mep-fecha').value || new Date().toISOString().slice(0,10);
+  const orig = cache.produccion.find(x=>x.id===id);
+  const [fy,fm,fd] = fechaSel.split('-').map(Number);
+  const origTime = orig?.created_at ? new Date(orig.created_at) : new Date();
+  const newDate = new Date(fy,fm-1,fd,origTime.getHours(),origTime.getMinutes(),0).toISOString();
+  const updates = {
+    qty,
+    hora_inicio: EL('mep-hora-ini').value,
+    hora_fin:    EL('mep-hora-fin').value,
+    operario:    EL('mep-operario').value,
+    obs:         EL('mep-obs').value,
+    created_at:  newDate
+  };
+  const ok = await dbUpdate('produccion', id, updates);
+  if(!ok) return;
+  closeModal('modal-edit-prod');
+  refreshProdLive(); refreshStockTab(); loadProdHistorial();
+  toast('✓ Lote de producción actualizado');
+}
+
+function openEditPerd(id){
+  const p = cache.perdidas.find(x=>x.id===id); if(!p) return;
+  EL('mepr-id').value      = id;
+  EL('mepr-qty').value     = p.qty;
+  EL('mepr-fecha').value   = p.created_at ? p.created_at.slice(0,10) : new Date().toISOString().slice(0,10);
+  EL('mepr-motivo').value  = p.motivo||'Rotura de sachet';
+  EL('mepr-desc').value    = p.descripcion||'';
+  openModal('modal-edit-perd');
+}
+
+async function saveEditPerd(){
+  const id  = parseInt(EL('mepr-id').value);
+  const qty = parseInt(EL('mepr-qty').value)||0;
+  if(qty<=0) return toast('La cantidad debe ser mayor a 0',true);
+  const fechaSel = EL('mepr-fecha').value || new Date().toISOString().slice(0,10);
+  const orig = cache.perdidas.find(x=>x.id===id);
+  const [fy,fm,fd] = fechaSel.split('-').map(Number);
+  const origTime = orig?.created_at ? new Date(orig.created_at) : new Date();
+  const newDate = new Date(fy,fm-1,fd,origTime.getHours(),origTime.getMinutes(),0).toISOString();
+  const updates = { qty, motivo: EL('mepr-motivo').value, descripcion: EL('mepr-desc').value, created_at: newDate };
+  const ok = await dbUpdate('perdidas', id, updates);
+  if(!ok) return;
+  closeModal('modal-edit-perd');
+  refreshProdLive(); refreshStockTab(); renderPerdidasHist();
+  toast('✓ Pérdida actualizada');
+}
+
+// Función genérica eliminar registro
+async function deleteRecord(table, id, modalId){
+  if(!confirm('¿Eliminar este registro? No se puede deshacer.')) return;
+  const numId = parseInt(id);
+  if(isOnline && SB){
+    const {error} = await SB.from(table).delete().eq('id', numId);
+    if(error){ toast('Error: '+error.message, true); return; }
+  }
+  const idx = cache[table].findIndex(r=>r.id===numId);
+  if(idx!==-1) cache[table].splice(idx,1);
+  await idbClear(table); for(const r of cache[table]) await idbPut(table,r);
+  closeModal(modalId);
+  refreshProdLive(); refreshStockTab(); renderPerdidasHist(); loadProdHistorial();
+  toast('🗑 Registro eliminado');
+}
+
+// ============================================================
+// AJUSTE MANUAL DE STOCK
+// ============================================================
+let cacheAjustes = []; // stored in localStorage (no Supabase table needed)
+
+async function saveStockAjuste(){
+  const valInput = parseInt(EL('stock-ajuste-val')?.value)||0;
+  const motivo   = EL('stock-ajuste-motivo')?.value.trim() || 'Ajuste manual';
+  if(valInput < 0) return toast('El stock no puede ser negativo',true);
+  // Calculate current stock
+  const prodTotal  = cache.produccion.reduce((a,p)=>a+p.qty,0);
+  const vendTotal  = cache.ventas.filter(v=>v.status==='entregado').reduce((a,v)=>a+v.qty+(v.bonificacion||0),0);
+  const perdTotal  = cache.perdidas.reduce((a,p)=>a+p.qty,0);
+  const stockCalc  = Math.max(0, prodTotal - vendTotal - perdTotal);
+  const diff       = valInput - stockCalc;
+  if(diff === 0){ toast('El stock ya coincide con el valor actual'); return; }
+  // Register as produccion (positive diff) or perdida (negative diff)
+  const now = new Date().toISOString();
+  if(diff > 0){
+    const rec = await dbInsert('produccion',{qty:diff, obs:'Ajuste: '+motivo, hora_inicio:'', hora_fin:'', operario:'Sistema', created_at:now});
+    if(!rec) return;
+  } else {
+    const rec = await dbInsert('perdidas',{qty:Math.abs(diff), motivo:'Ajuste: '+motivo, descripcion:'Corrección manual de stock', created_at:now});
+    if(!rec) return;
+  }
+  // Save to local history
+  const ajuste = {id:Date.now(), fecha:now.slice(0,10), stockAntes:stockCalc, stockDespues:valInput, diff, motivo, hora:locTime(now)};
+  cacheAjustes.unshift(ajuste);
+  localStorage.setItem('stock_ajustes', JSON.stringify(cacheAjustes.slice(0,50)));
+  EL('stock-ajuste-val').value=''; EL('stock-ajuste-motivo').value='';
+  refreshProdLive(); refreshStockTab(); renderStockAjustes();
+  toast(diff>0?`✓ Stock ajustado: +${diff} sachet añadidos`:`✓ Stock ajustado: ${diff} sachet descontados`);
+}
+
+function renderStockAjustes(){
+  const el = EL('stock-ajustes-hist'); if(!el) return;
+  cacheAjustes = JSON.parse(localStorage.getItem('stock_ajustes')||'[]');
+  if(!cacheAjustes.length){ el.innerHTML='<div style="text-align:center;padding:14px;color:var(--text3);font-size:13px">Sin ajustes registrados</div>'; return; }
+  el.innerHTML='<div class="card">'+cacheAjustes.slice(0,10).map(a=>`
+    <div class="li">
+      <div class="li-avatar" style="background:${a.diff>0?'rgba(0,245,147,.1)':'rgba(255,69,96,.1)'};color:${a.diff>0?'var(--success)':'var(--danger)'}">
+        ${a.diff>0?'▲':'▼'}
+      </div>
+      <div class="li-info">
+        <div class="li-name">${a.motivo}</div>
+        <div class="li-sub">${a.fecha} ${a.hora||''} · Antes: ${fmtNum(a.stockAntes)} → Después: ${fmtNum(a.stockDespues)}</div>
+      </div>
+      <span class="badge ${a.diff>0?'b-green':'b-red'}">${a.diff>0?'+':''}${a.diff}</span>
+    </div>`).join('')+'</div>';
+}
 // ============================================================
 // DASHBOARD
 // ============================================================
@@ -2313,7 +2530,7 @@ async function replayRoute(routeId){
 (async function init(){
   await openIDB();await loadIDB();
   const today2=new Date().toISOString().slice(0,10);
-  ['vd-fecha','p-hist-date','pv-fecha','rh-fecha'].forEach(id=>{const e=EL(id);if(e)e.value=today2;});
+  ['vd-fecha','p-hist-date','pv-fecha','rh-fecha','p-fecha','perd-fecha','perd-hist-date'].forEach(id=>{const e=EL(id);if(e)e.value=today2;});
   const url=LS('sb_url'),key=LS('sb_key');
   if(url&&key){
     EL('cfg-url').value=url;EL('cfg-key').value=key;
