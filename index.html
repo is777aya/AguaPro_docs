@@ -401,10 +401,11 @@ textarea.finput{resize:vertical;min-height:70px;line-height:1.5}
   <!-- TAB STOCK -->
   <div id="tp-stock" style="display:none">
     <div class="mg">
-      <div class="metric water"><div class="m-label">Stock actual</div><div class="m-val blue" id="stock-actual">0</div><div class="m-sub">sachet disponibles</div></div>
-      <div class="metric"><div class="m-label">Vendidos total</div><div class="m-val green" id="stock-vendido">0</div><div class="m-sub">sachet</div></div>
-      <div class="metric danger"><div class="m-label">Pérdidas total</div><div class="m-val red" id="stock-perd">0</div><div class="m-sub">sachet</div></div>
-      <div class="metric prod"><div class="m-label">Producido total</div><div class="m-val purple" id="stock-prod">0</div><div class="m-sub">sachet</div></div>
+      <div class="metric water" style="grid-column: span 2;"><div class="m-label">Stock físico almacén</div><div class="m-val blue" id="stock-actual">0</div><div class="m-sub">sachet disponibles</div></div>
+      <div class="metric prod"><div class="m-label">Producido</div><div class="m-val purple" id="stock-prod">0</div><div class="m-sub">sachet globales</div></div>
+      <div class="metric green"><div class="m-label">Vendidos</div><div class="m-val green" id="stock-vendido">0</div><div class="m-sub">sachet pagados</div></div>
+      <div class="metric warn"><div class="m-label">Bonificados</div><div class="m-val warn" id="stock-boni">0</div><div class="m-sub">sachet regalados</div></div>
+      <div class="metric danger"><div class="m-label">Pérdidas</div><div class="m-val red" id="stock-perd">0</div><div class="m-sub">sachet rotos</div></div>
     </div>
     <!-- STOCK BAR -->
     <div class="card">
@@ -653,12 +654,16 @@ textarea.finput{resize:vertical;min-height:70px;line-height:1.5}
         <input type="date" class="finput" id="f-fecha" style="flex:1" onchange="refreshFinanzas()">
       </div>
       <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding:6px 0">
-        <span style="font-size:12px;color:var(--text2)">+ Ventas de Agua</span>
+        <span style="font-size:12px;color:var(--text2)">+ Ingresos por Ventas</span>
         <span style="font-size:13px;font-weight:700;color:var(--success)" id="f-dia-ventas">Bs.0.00</span>
       </div>
       <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding:6px 0">
         <span style="font-size:12px;color:var(--text2)">+ Ingresos Extra</span>
         <span style="font-size:13px;font-weight:700;color:var(--success)" id="f-dia-ingreso">Bs.0.00</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding:6px 0">
+        <span style="font-size:12px;color:var(--text2)">- Costo Bonificaciones</span>
+        <span style="font-size:13px;font-weight:700;color:var(--danger)" id="f-dia-boni">Bs.0.00</span>
       </div>
       <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding:6px 0">
         <span style="font-size:12px;color:var(--text2)">- Gastos / Egresos</span>
@@ -667,6 +672,31 @@ textarea.finput{resize:vertical;min-height:70px;line-height:1.5}
       <div style="display:flex;justify-content:space-between;padding:8px 0;margin-top:4px">
         <span style="font-size:13px;font-weight:800;color:var(--text)">Balance del día</span>
         <span style="font-size:16px;font-weight:800;font-family:var(--mono)" id="f-dia-balance">Bs.0.00</span>
+      </div>
+    </div>
+
+    <!-- CUADRE FISICO -->
+    <div class="card">
+      <div class="card-title">📦 Cuadre de Unidades Físicas (Día)</div>
+      <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding:6px 0">
+        <span style="font-size:12px;color:var(--text2)">+ Producción hoy</span>
+        <span style="font-size:13px;font-weight:700;color:var(--prod)" id="f-dia-prod-fis">0 sachet</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding:6px 0">
+        <span style="font-size:12px;color:var(--text2)">- Ventas reales (Pagadas)</span>
+        <span style="font-size:13px;font-weight:700;color:var(--success)" id="f-dia-ventas-fis">0 sachet</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding:6px 0">
+        <span style="font-size:12px;color:var(--text2)">- Bonificados (Pérdida/Regalo)</span>
+        <span style="font-size:13px;font-weight:700;color:var(--warn)" id="f-dia-boni-fis">0 sachet</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding:6px 0">
+        <span style="font-size:12px;color:var(--text2)">- Mermas o Roturas</span>
+        <span style="font-size:13px;font-weight:700;color:var(--danger)" id="f-dia-perd-fis">0 sachet</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:8px 0;margin-top:4px">
+        <span style="font-size:13px;font-weight:800;color:var(--text)">Variación neta en almacén</span>
+        <span style="font-size:16px;font-weight:800;font-family:var(--mono)" id="f-dia-balance-fis">0 sachet</span>
       </div>
     </div>
 
@@ -955,6 +985,111 @@ textarea.finput{resize:vertical;min-height:70px;line-height:1.5}
   <button class="nav-btn" onclick="goScreen('screen-finanzas',4);refreshFinanzas()"><div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div>Finanzas</button>
 </nav>
 <script>
+// ============================================================
+// SQL SETUP
+// ============================================================
+const SQL=`-- AguaPro — Ejecuta en Supabase SQL Editor
+create table if not exists produccion (
+  id bigint primary key generated always as identity,
+  qty integer not null,
+  hora_inicio text,
+  hora_fin text,
+  operario text,
+  obs text,
+  created_at timestamptz default now()
+);
+create table if not exists perdidas (
+  id bigint primary key generated always as identity,
+  qty integer not null,
+  motivo text,
+  descripcion text,
+  created_at timestamptz default now()
+);
+create table if not exists pdvs (
+  id bigint primary key generated always as identity,
+  owner_name text not null,
+  biz_name text not null,
+  tel text,
+  dir text,
+  tipo text,
+  capacidad integer default 100,
+  lat double precision,
+  lng double precision,
+  foto text,
+  initials text,
+  created_at timestamptz default now()
+);
+create table if not exists ventas (
+  id bigint primary key generated always as identity,
+  pdv_id bigint references pdvs(id),
+  pdv_name text,
+  qty integer not null,
+  precio numeric(10,2) default 0.50,
+  total numeric(10,2),
+  notas text,
+  fecha_entrega date,
+  status text default 'entregado',
+  pago text default 'efectivo',
+  bonificacion integer default 0,
+  precio_boni numeric(10,2) default 0,
+  total_boni numeric(10,2) default 0,
+  created_at timestamptz default now()
+);
+create table if not exists config (
+  id bigint primary key generated always as identity,
+  key text unique,
+  value text
+);
+-- RLS
+alter table produccion enable row level security;
+alter table perdidas enable row level security;
+alter table pdvs enable row level security;
+alter table ventas enable row level security;
+alter table config enable row level security;
+create policy "open" on produccion for all using (true) with check (true);
+create policy "open" on perdidas for all using (true) with check (true);
+create policy "open" on pdvs for all using (true) with check (true);
+create policy "open" on ventas for all using (true) with check (true);
+create policy "open" on config for all using (true) with check (true);
+-- Insertar config inicial
+insert into config(key,value) values('stock_max','10000') on conflict(key) do nothing;
+create table if not exists sessions (
+  id bigint primary key generated always as identity,
+  user_id uuid,
+  user_name text,
+  user_role text,
+  action text,
+  device text,
+  created_at timestamptz default now()
+);
+create table if not exists route_history (
+  id bigint primary key generated always as identity,
+  fecha date,
+  user_name text,
+  user_id uuid,
+  total_pdvs integer,
+  start_lat double precision,
+  start_lng double precision,
+  stops jsonb,
+  created_at timestamptz default now()
+);
+alter table sessions enable row level security;
+alter table route_history enable row level security;
+create policy "open" on sessions for all using (true) with check (true);
+create policy "open" on route_history for all using (true) with check (true);
+create table if not exists finanzas (
+  id bigint primary key generated always as identity,
+  tipo text not null,
+  monto numeric(10,2) not null,
+  concepto text,
+  notas text,
+  fecha date,
+  created_at timestamptz default now()
+);
+alter table finanzas enable row level security;
+create policy "open" on finanzas for all using (true) with check (true);`;
+document.getElementById('sql-box').textContent=SQL;
+
 // ============================================================
 // STATE
 // ============================================================
@@ -1250,7 +1385,7 @@ function refreshProdLive(){
   const totalHoy   = prodHoy.reduce((a,p)=>a+p.qty,0);
   const perdHoy    = cache.perdidas.filter(p=>new Date(p.created_at).toDateString()===tdStr).reduce((a,p)=>a+p.qty,0);
   const prodTotal  = cache.produccion.reduce((a,p)=>a+p.qty,0);
-  const vendTotal  = cache.ventas.filter(v=>v.status==='entregado').reduce((a,v)=>a+v.qty,0);
+  const vendTotal  = cache.ventas.filter(v=>v.status==='entregado').reduce((a,v)=>a+v.qty+(v.bonificacion||0),0);
   const perdTotal  = cache.perdidas.reduce((a,p)=>a+p.qty,0);
   const stockActual= Math.max(0, prodTotal - vendTotal - perdTotal);
 
@@ -1311,15 +1446,18 @@ function renderPerdidasHist(){
 function refreshStockTab(){
   // Cálculos centrales — ÚNICA fuente de verdad para el stock
   const prodTotal    = cache.produccion.reduce((a,p)=>a+p.qty,0);
-  const vendidoTotal = cache.ventas.filter(v=>v.status==='entregado').reduce((a,v)=>a+v.qty,0);
+  const entregados   = cache.ventas.filter(v=>v.status==='entregado');
+  const vendidoTotal = entregados.reduce((a,v)=>a+v.qty,0);
+  const boniTotal    = entregados.reduce((a,v)=>a+(v.bonificacion||0),0);
   const perdTotal    = cache.perdidas.reduce((a,p)=>a+p.qty,0);
-  const stockActual  = Math.max(0, prodTotal - vendidoTotal - perdTotal);
+  const stockActual  = Math.max(0, prodTotal - vendidoTotal - boniTotal - perdTotal);
   const stockMax     = parseInt(cache.config.stock_max)||10000;
   const pct          = Math.min(100,Math.round(stockActual/stockMax*100));
 
   const set=(id,v)=>{const e=EL(id);if(e)e.textContent=v;};
   set('stock-actual',  fmtNum(stockActual));
   set('stock-vendido', fmtNum(vendidoTotal));
+  set('stock-boni',    fmtNum(boniTotal));
   set('stock-perd',    fmtNum(perdTotal));
   set('stock-prod',    fmtNum(prodTotal));
   set('stock-pct',     pct+'%');
@@ -2582,26 +2720,19 @@ async function refreshFinanzas() {
   const dt = V('f-fecha'); if(!dt) return;
   const ds = new Date(dt+'T00:00:00').toDateString();
 
-  let ingresosVentasTotal = 0;
-  if(SB && isOnline) {
-    const { data } = await SB.rpc('ventas_total_acumulado');
-    if(data !== null) ingresosVentasTotal = Number(data);
-  } else {
-    // offline fallback
-    const totalCache = cache.ventas.reduce((a,v) => a + Number(v.total||0), 0);
-    const pagadoOffline = cache.ventas.reduce((a,v) => v.status==='entregado' ? a + Number(v.total||0) : a, 0); // Aproximacion offline.
-    ingresosVentasTotal = totalCache; 
-  }
-  
+  // Costos / Ingresos globales calculados siempre exactos desde cache local
+  const ventasRealGlobal = cache.ventas.filter(v=>v.status==='entregado').reduce((a,v) => a + Number(v.total||0), 0);
+  const boniCostoGlobal  = cache.ventas.filter(v=>v.status==='entregado').reduce((a,v) => a + Number(v.total_boni||0), 0);
   const extrasAcum = cache.finanzas.filter(f => f.tipo==='ingreso_extra').reduce((a,f)=>a+Number(f.monto), 0);
   const gastosAcum = cache.finanzas.filter(f => f.tipo==='gasto').reduce((a,f)=>a+Number(f.monto), 0);
   
-  const ingresoTotalGlobal = ingresosVentasTotal + extrasAcum;
-  const balanceGlobal = ingresoTotalGlobal - gastosAcum;
+  const ingresoTotalGlobal = ventasRealGlobal + extrasAcum;
+  const egresoTotalGlobal = gastosAcum + boniCostoGlobal;
+  const balanceGlobal = ingresoTotalGlobal - egresoTotalGlobal;
   
   const set=(id,v)=>{const e=EL(id);if(e)e.textContent=v;};
   set('f-ingreso-total', fmtBs(ingresoTotalGlobal));
-  set('f-egreso-total', fmtBs(gastosAcum));
+  set('f-egreso-total', fmtBs(egresoTotalGlobal));
   
   const bEl=EL('f-balance-total');
   if(bEl) {
@@ -2610,26 +2741,47 @@ async function refreshFinanzas() {
   }
 
   // Resumen del día
-  const ventasHoy = cache.ventas.filter(v=>{
+  const ventasDelDiaCache = cache.ventas.filter(v=>{
     const byC=new Date(v.created_at).toDateString()===ds;
     const byF=v.fecha_entrega===dt;
     return (byC||byF)&&v.status==='entregado';
-  }).reduce((a,v)=>a+Number(v.total||0), 0);
+  });
+  const ventasHoyInfo   = ventasDelDiaCache.reduce((a,v)=>a+Number(v.total||0), 0);
+  const boniCostoHoy    = ventasDelDiaCache.reduce((a,v)=>a+Number(v.total_boni||0), 0);
   
   const finHoy = cache.finanzas.filter(f => f.fecha === dt || new Date(f.created_at).toDateString()===ds);
   const ingresoExtraHoy = finHoy.filter(f => f.tipo==='ingreso_extra').reduce((a,f)=>a+Number(f.monto), 0);
   const gastoHoy = finHoy.filter(f => f.tipo==='gasto').reduce((a,f)=>a+Number(f.monto), 0);
   
-  const balanceDia = (ventasHoy + ingresoExtraHoy) - gastoHoy;
+  const balanceDia = (ventasHoyInfo + ingresoExtraHoy) - (gastoHoy + boniCostoHoy);
   
-  set('f-dia-ventas', fmtBs(ventasHoy));
+  set('f-dia-ventas', fmtBs(ventasHoyInfo));
   set('f-dia-ingreso', fmtBs(ingresoExtraHoy));
+  set('f-dia-boni', fmtBs(boniCostoHoy));
   set('f-dia-gasto', fmtBs(gastoHoy));
   
   const bdEl = EL('f-dia-balance');
   if(bdEl) {
     bdEl.textContent = fmtBs(balanceDia);
     bdEl.style.color = balanceDia < 0 ? 'var(--danger)' : (balanceDia > 0 ? 'var(--success)' : 'var(--text)');
+  }
+
+  // Cuadre Físico Día
+  const prodHoyFis = cache.produccion.filter(p=>new Date(p.created_at).toDateString()===ds).reduce((a,p)=>a+p.qty,0);
+  const perdHoyFis = cache.perdidas.filter(p=>new Date(p.created_at).toDateString()===ds).reduce((a,p)=>a+p.qty,0);
+  const ventasHoyFis = ventasDelDiaCache.reduce((a,v)=>a+v.qty,0);
+  const boniHoyFis   = ventasDelDiaCache.reduce((a,v)=>a+(v.bonificacion||0),0);
+  const balanceFis   = prodHoyFis - ventasHoyFis - boniHoyFis - perdHoyFis;
+
+  set('f-dia-prod-fis', fmtNum(prodHoyFis) + ' sachet');
+  set('f-dia-ventas-fis', fmtNum(ventasHoyFis) + ' sachet');
+  set('f-dia-boni-fis', fmtNum(boniHoyFis) + ' sachet');
+  set('f-dia-perd-fis', fmtNum(perdHoyFis) + ' sachet');
+  
+  const bFisEl = EL('f-dia-balance-fis');
+  if(bFisEl) {
+    bFisEl.textContent = (balanceFis>0?'+':'') + fmtNum(balanceFis) + ' sachet';
+    bFisEl.style.color = balanceFis < 0 ? 'var(--danger)' : (balanceFis > 0 ? 'var(--success)' : 'var(--text)');
   }
 
   const flist = EL('f-list');
