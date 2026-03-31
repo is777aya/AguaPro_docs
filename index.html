@@ -631,6 +631,68 @@ textarea.finput{resize:vertical;min-height:70px;line-height:1.5}
   <button class="btn btn-ghost btn-full" style="margin-top:8px" onclick="openModal('modal-config')">⚙ Configurar Supabase</button>
 </div>
 
+<!-- ===== PANTALLA 5: FINANZAS ===== -->
+<div class="screen" id="screen-finanzas">
+  <div class="sec-header"><div class="sec-title">Finanzas</div><div class="sec-sub">Ingresos extra y gastos</div></div>
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab(this,'tf-resumen');refreshFinanzas()">Resumen</div>
+    <div class="tab" onclick="switchTab(this,'tf-registro')">Registrar</div>
+  </div>
+
+  <!-- TAB RESUMEN -->
+  <div id="tf-resumen">
+    <div class="mg" style="margin-bottom:8px">
+      <div class="metric green"><div class="m-label">Ingresos globales</div><div class="m-val green" id="f-ingreso-total">Bs.0</div></div>
+      <div class="metric danger"><div class="m-label">Egresos globales</div><div class="m-val red" id="f-egreso-total">Bs.0</div></div>
+      <div class="metric warn" style="grid-column: span 2;"><div class="m-label">Balance Total Histórico</div><div class="m-val warn" id="f-balance-total">Bs.0</div></div>
+    </div>
+    
+    <div class="card">
+      <div class="card-title">Resumen del Día</div>
+      <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center">
+        <input type="date" class="finput" id="f-fecha" style="flex:1" onchange="refreshFinanzas()">
+      </div>
+      <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding:6px 0">
+        <span style="font-size:12px;color:var(--text2)">+ Ventas de Agua</span>
+        <span style="font-size:13px;font-weight:700;color:var(--success)" id="f-dia-ventas">Bs.0.00</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding:6px 0">
+        <span style="font-size:12px;color:var(--text2)">+ Ingresos Extra</span>
+        <span style="font-size:13px;font-weight:700;color:var(--success)" id="f-dia-ingreso">Bs.0.00</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding:6px 0">
+        <span style="font-size:12px;color:var(--text2)">- Gastos / Egresos</span>
+        <span style="font-size:13px;font-weight:700;color:var(--danger)" id="f-dia-gasto">Bs.0.00</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:8px 0;margin-top:4px">
+        <span style="font-size:13px;font-weight:800;color:var(--text)">Balance del día</span>
+        <span style="font-size:16px;font-weight:800;font-family:var(--mono)" id="f-dia-balance">Bs.0.00</span>
+      </div>
+    </div>
+
+    <div class="card-title" style="margin-bottom:10px">Historial de registros</div>
+    <div id="f-list"><div style="text-align:center;padding:24px;color:var(--text3);font-size:13px">Sin registros para esta fecha</div></div>
+  </div>
+
+  <!-- TAB REGISTRO -->
+  <div id="tf-registro" style="display:none">
+    <div class="card">
+      <div class="card-title">Nuevo Movimiento</div>
+      <div class="fg"><label class="flabel">Tipo de movimiento</label>
+        <select class="finput" id="fr-tipo">
+          <option value="gasto">Gasto / Egreso</option>
+          <option value="ingreso_extra">Ingreso Extra</option>
+        </select>
+      </div>
+      <div class="fg"><label class="flabel">Fecha</label><input type="date" class="finput" id="fr-fecha"></div>
+      <div class="fg"><label class="flabel">Monto (Bs.)</label><input type="number" class="finput" id="fr-monto" placeholder="0.00" step="0.01"></div>
+      <div class="fg"><label class="flabel">Concepto / Categoría</label><input type="text" class="finput" id="fr-concepto" placeholder="Ej: Combustible, Reparación"></div>
+      <div class="fg"><label class="flabel">Notas</label><textarea class="finput" id="fr-notas" rows="2" placeholder="Detalles de la transacción..."></textarea></div>
+      <button class="btn btn-water btn-full" onclick="saveFinanza()">💧 Guardar movimiento</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== MODALS ===== -->
 
 <!-- MODAL NUEVO PDV -->
@@ -890,107 +952,14 @@ textarea.finput{resize:vertical;min-height:70px;line-height:1.5}
   <button class="nav-btn" onclick="goScreen('screen-mapa',1);initMap()"><div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg></div>Mapa PDV</button>
   <button class="nav-btn" onclick="goScreen('screen-ventas',2);initVentaDia();refreshVentasDia()"><div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>Ventas</button>
   <button class="nav-btn" onclick="goScreen('screen-dash',3);refreshDash()"><div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg></div>Dashboard</button>
+  <button class="nav-btn" onclick="goScreen('screen-finanzas',4);refreshFinanzas()"><div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div>Finanzas</button>
 </nav>
 <script>
-// ============================================================
-// SQL SETUP
-// ============================================================
-const SQL=`-- AguaPro — Ejecuta en Supabase SQL Editor
-create table if not exists produccion (
-  id bigint primary key generated always as identity,
-  qty integer not null,
-  hora_inicio text,
-  hora_fin text,
-  operario text,
-  obs text,
-  created_at timestamptz default now()
-);
-create table if not exists perdidas (
-  id bigint primary key generated always as identity,
-  qty integer not null,
-  motivo text,
-  descripcion text,
-  created_at timestamptz default now()
-);
-create table if not exists pdvs (
-  id bigint primary key generated always as identity,
-  owner_name text not null,
-  biz_name text not null,
-  tel text,
-  dir text,
-  tipo text,
-  capacidad integer default 100,
-  lat double precision,
-  lng double precision,
-  foto text,
-  initials text,
-  created_at timestamptz default now()
-);
-create table if not exists ventas (
-  id bigint primary key generated always as identity,
-  pdv_id bigint references pdvs(id),
-  pdv_name text,
-  qty integer not null,
-  precio numeric(10,2) default 0.50,
-  total numeric(10,2),
-  notas text,
-  fecha_entrega date,
-  status text default 'entregado',
-  pago text default 'efectivo',
-  bonificacion integer default 0,
-  precio_boni numeric(10,2) default 0,
-  total_boni numeric(10,2) default 0,
-  created_at timestamptz default now()
-);
-create table if not exists config (
-  id bigint primary key generated always as identity,
-  key text unique,
-  value text
-);
--- RLS
-alter table produccion enable row level security;
-alter table perdidas enable row level security;
-alter table pdvs enable row level security;
-alter table ventas enable row level security;
-alter table config enable row level security;
-create policy "open" on produccion for all using (true) with check (true);
-create policy "open" on perdidas for all using (true) with check (true);
-create policy "open" on pdvs for all using (true) with check (true);
-create policy "open" on ventas for all using (true) with check (true);
-create policy "open" on config for all using (true) with check (true);
--- Insertar config inicial
-insert into config(key,value) values('stock_max','10000') on conflict(key) do nothing;
-create table if not exists sessions (
-  id bigint primary key generated always as identity,
-  user_id uuid,
-  user_name text,
-  user_role text,
-  action text,
-  device text,
-  created_at timestamptz default now()
-);
-create table if not exists route_history (
-  id bigint primary key generated always as identity,
-  fecha date,
-  user_name text,
-  user_id uuid,
-  total_pdvs integer,
-  start_lat double precision,
-  start_lng double precision,
-  stops jsonb,
-  created_at timestamptz default now()
-);
-alter table sessions enable row level security;
-alter table route_history enable row level security;
-create policy "open" on sessions for all using (true) with check (true);
-create policy "open" on route_history for all using (true) with check (true);`;
-document.getElementById('sql-box').textContent=SQL;
-
 // ============================================================
 // STATE
 // ============================================================
 let SB=null, isOnline=false;
-let cache={produccion:[],perdidas:[],pdvs:[],ventas:[],config:{stock_max:10000}};
+let cache={produccion:[],perdidas:[],pdvs:[],ventas:[],finanzas:[],config:{stock_max:10000}};
 let osmMap=null, osmMarkers=[], routeLayer=null;
 let modalLat=null, modalLng=null, currentPhoto=null;
 
@@ -998,8 +967,8 @@ let modalLat=null, modalLng=null, currentPhoto=null;
 // IDB
 // ============================================================
 let idb=null;
-const IDB_NAME='aguapro_v1', IDB_VER=1;
-const STORES=['produccion','perdidas','pdvs','ventas'];
+const IDB_NAME='aguapro_v1', IDB_VER=2;
+const STORES=['produccion','perdidas','pdvs','ventas','finanzas'];
 function openIDB(){return new Promise((res,rej)=>{const r=indexedDB.open(IDB_NAME,IDB_VER);r.onupgradeneeded=e=>{const db=e.target.result;STORES.forEach(s=>{if(!db.objectStoreNames.contains(s))db.createObjectStore(s,{keyPath:'id',autoIncrement:true});});};r.onsuccess=e=>{idb=e.target.result;res();};r.onerror=()=>rej();});}
 function idbAll(s){return new Promise((res,rej)=>{if(!idb)return res([]);const r=idb.transaction(s,'readonly').objectStore(s).getAll();r.onsuccess=()=>res(r.result||[]);r.onerror=()=>res([]);});}
 function idbPut(s,rec){return new Promise((res,rej)=>{if(!idb)return res();const r=idb.transaction(s,'readwrite').objectStore(s).put(rec);r.onsuccess=()=>res(r.result);r.onerror=()=>res();});}
@@ -1030,8 +999,8 @@ function startApp(){hideLoad();EL('setup-screen').style.display='none';EL('main-
   // Load route history cache
   if(SB&&isOnline){SB.from('route_history').select('*').order('id',{ascending:false}).limit(50).then(({data})=>{if(data)cache.route_history=data;});}
 const d=new Date();EL('date-pill').textContent=d.toLocaleDateString('es-BO',{day:'2-digit',month:'short'});
-EL('vd-fecha').value=d.toISOString().slice(0,10);EL('p-hist-date').value=d.toISOString().slice(0,10);EL('pv-fecha').value=d.toISOString().slice(0,10);
-refreshProdLive();buildQuickHours();refreshPDVSelect();renderPedidos('pendiente');refreshStockTab();initVentaDia();renderStockAjustes();renderPerdidasHist();}
+EL('vd-fecha').value=d.toISOString().slice(0,10);EL('p-hist-date').value=d.toISOString().slice(0,10);EL('pv-fecha').value=d.toISOString().slice(0,10);EL('f-fecha').value=d.toISOString().slice(0,10);EL('fr-fecha').value=d.toISOString().slice(0,10);
+refreshProdLive();buildQuickHours();refreshPDVSelect();renderPedidos('pendiente');refreshStockTab();initVentaDia();renderStockAjustes();renderPerdidasHist();refreshFinanzas();}
 
 // ============================================================
 // HELPERS
@@ -2587,6 +2556,100 @@ async function replayRoute(routeId){
     setTimeout(()=>osmMap.invalidateSize(),300);
     toast('✓ Mostrando ruta del '+route.fecha+' ('+route.user_name+')');
   },400);
+}
+
+// ============================================================
+// FINANZAS
+// ============================================================
+async function saveFinanza() {
+  const tipo = V('fr-tipo');
+  const monto = parseFloat(V('fr-monto'))||0;
+  if(monto <= 0) return toast('Ingresa un monto válido',true);
+  const concepto = V('fr-concepto').trim() || 'Sin especificar';
+  const fecha = V('fr-fecha') || new Date().toISOString().slice(0,10);
+  const notas = V('fr-notas').trim();
+  
+  const record = { tipo, monto, concepto, notas, fecha, created_at: new Date().toISOString() };
+  const saved = await dbInsert('finanzas', record);
+  if(!saved) return;
+  
+  EL('fr-monto').value = ''; EL('fr-concepto').value = ''; EL('fr-notas').value = '';
+  refreshFinanzas();
+  toast('✓ Movimiento guardado');
+}
+
+async function refreshFinanzas() {
+  const dt = V('f-fecha'); if(!dt) return;
+  const ds = new Date(dt+'T00:00:00').toDateString();
+
+  let ingresosVentasTotal = 0;
+  if(SB && isOnline) {
+    const { data } = await SB.rpc('ventas_total_acumulado');
+    if(data !== null) ingresosVentasTotal = Number(data);
+  } else {
+    // offline fallback
+    const totalCache = cache.ventas.reduce((a,v) => a + Number(v.total||0), 0);
+    const pagadoOffline = cache.ventas.reduce((a,v) => v.status==='entregado' ? a + Number(v.total||0) : a, 0); // Aproximacion offline.
+    ingresosVentasTotal = totalCache; 
+  }
+  
+  const extrasAcum = cache.finanzas.filter(f => f.tipo==='ingreso_extra').reduce((a,f)=>a+Number(f.monto), 0);
+  const gastosAcum = cache.finanzas.filter(f => f.tipo==='gasto').reduce((a,f)=>a+Number(f.monto), 0);
+  
+  const ingresoTotalGlobal = ingresosVentasTotal + extrasAcum;
+  const balanceGlobal = ingresoTotalGlobal - gastosAcum;
+  
+  const set=(id,v)=>{const e=EL(id);if(e)e.textContent=v;};
+  set('f-ingreso-total', fmtBs(ingresoTotalGlobal));
+  set('f-egreso-total', fmtBs(gastosAcum));
+  
+  const bEl=EL('f-balance-total');
+  if(bEl) {
+    bEl.textContent = fmtBs(balanceGlobal);
+    bEl.style.color = balanceGlobal < 0 ? 'var(--danger)' : 'var(--warn)';
+  }
+
+  // Resumen del día
+  const ventasHoy = cache.ventas.filter(v=>{
+    const byC=new Date(v.created_at).toDateString()===ds;
+    const byF=v.fecha_entrega===dt;
+    return (byC||byF)&&v.status==='entregado';
+  }).reduce((a,v)=>a+Number(v.total||0), 0);
+  
+  const finHoy = cache.finanzas.filter(f => f.fecha === dt || new Date(f.created_at).toDateString()===ds);
+  const ingresoExtraHoy = finHoy.filter(f => f.tipo==='ingreso_extra').reduce((a,f)=>a+Number(f.monto), 0);
+  const gastoHoy = finHoy.filter(f => f.tipo==='gasto').reduce((a,f)=>a+Number(f.monto), 0);
+  
+  const balanceDia = (ventasHoy + ingresoExtraHoy) - gastoHoy;
+  
+  set('f-dia-ventas', fmtBs(ventasHoy));
+  set('f-dia-ingreso', fmtBs(ingresoExtraHoy));
+  set('f-dia-gasto', fmtBs(gastoHoy));
+  
+  const bdEl = EL('f-dia-balance');
+  if(bdEl) {
+    bdEl.textContent = fmtBs(balanceDia);
+    bdEl.style.color = balanceDia < 0 ? 'var(--danger)' : (balanceDia > 0 ? 'var(--success)' : 'var(--text)');
+  }
+
+  const flist = EL('f-list');
+  if(!finHoy.length) {
+    flist.innerHTML='<div style="text-align:center;padding:24px;color:var(--text3);font-size:13px">Sin movimientos extra para esta fecha</div>';
+  } else {
+    flist.innerHTML='<div class="card">'+[...finHoy].reverse().map(f=>{
+      const isG = f.tipo==='gasto';
+      return `<div class="li">
+        <div class="li-avatar" style="background:${isG?'rgba(255,69,96,.1)':'rgba(0,245,147,.1)'};color:${isG?'var(--danger)':'var(--success)'}">${isG?'📉':'📈'}</div>
+        <div class="li-info" style="flex:1;min-width:0">
+          <div class="li-name">${f.concepto}</div>
+          <div class="li-sub">${f.notas||''}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
+          <span class="badge ${isG?'b-red':'b-green'}">${isG?'-':'+'} ${fmtBs(f.monto)}</span>
+        </div>
+      </div>`;
+    }).join('')+'</div>';
+  }
 }
 
 // ============================================================
