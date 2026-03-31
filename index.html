@@ -2516,9 +2516,11 @@ async function refreshDash(){
   const ventasHoy  = ventasEntHoy.reduce((a,v)=>a+Number(v.total)+Number(v.total_boni||0),0);
   // Stock — fórmula única correcta
   const prodTotal  = cache.produccion.reduce((a,p)=>a+p.qty,0);
-  const vendTotal  = cache.ventas.filter(v=>v.status==='entregado').reduce((a,v)=>a+v.qty,0);
+  const entregados = cache.ventas.filter(v=>v.status==='entregado');
+  const vendTotal  = entregados.reduce((a,v)=>a+v.qty,0);
+  const boniTotal  = entregados.reduce((a,v)=>a+(v.bonificacion||0),0);
   const perdTotal  = cache.perdidas.reduce((a,p)=>a+p.qty,0);
-  const stockActual= Math.max(0, prodTotal - vendTotal - perdTotal);
+  const stockActual= Math.max(0, prodTotal - vendTotal - boniTotal - perdTotal);
 
   const set=(id,v)=>{const e=EL(id);if(e)e.textContent=v;};
   set('d-prod',      fmtNum(prodHoy));
