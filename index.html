@@ -460,13 +460,21 @@ textarea.finput{resize:vertical;min-height:70px;line-height:1.5}
   </div>
 
   <!-- PANEL UBICACIÓN EN TIEMPO REAL -->
-  <div class="live-panel" id="live-panel" style="display:none">
+  <div class="live-panel" id="live-panel" style="display:none;position:relative">
     <div class="live-badge"><div class="live-badge-dot"></div>EN VIVO</div>
     <div class="live-coords" id="live-coords">Obteniendo posición...</div>
     <div class="live-acc" id="live-acc">Precisión: —</div>
     <div class="live-speed" id="live-speed"></div>
+    <div id="live-compass" style="position:absolute;top:50%;right:10px;transform:translateY(-50%);width:40px;height:40px;border-radius:50%;background:rgba(0,180,255,.1);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;transition:transform 0.1s linear;font-size:20px;box-shadow:0 0 8px rgba(0,180,255,.4)">🧭</div>
   </div>
 
+  <div style="display:flex;gap:8px;margin-bottom:10px">
+    <select class="finput" id="map-filter-visited" onchange="refreshMarkers();renderPDVListMap()" style="flex:1;padding:8px 12px;font-size:12px;height:34px">
+      <option value="all">Ver todos los PDV</option>
+      <option value="unvisited">Faltan visitar (Azul)</option>
+      <option value="visited">Ya visitados hoy (Verde)</option>
+    </select>
+  </div>
   <div id="osm-map"></div>
 
   <!-- TABS -->
@@ -1192,6 +1200,13 @@ function toggleLiveTracking(){
   else           startLiveTracking();
 }
 
+function handleOrientation(e){
+  if(e.webkitCompassHeading) liveHeading = e.webkitCompassHeading;
+  else if(e.alpha !== null) liveHeading = 360 - e.alpha;
+  const compass = EL('live-compass');
+  if(compass && liveHeading !== null) compass.style.transform = `translateY(-50%) rotate(${liveHeading}deg)`;
+}
+
 function startLiveTracking(){
   if(!navigator.geolocation) return toast('GPS no disponible en este dispositivo', true);
   liveActive = true;
@@ -1206,11 +1221,17 @@ function startLiveTracking(){
     err => { toast('GPS: '+err.message, true); stopLiveTracking(); },
     { enableHighAccuracy:true, maximumAge:3000, timeout:10000 }
   );
+  if(typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function'){
+     DeviceOrientationEvent.requestPermission().then(r=>{if(r==='granted') window.addEventListener('deviceorientation',handleOrientation);}).catch(console.log);
+  } else {
+     window.addEventListener('deviceorientation',handleOrientation);
+  }
   toast('📡 Seguimiento en tiempo real activado');
 }
 
 function stopLiveTracking(){
   liveActive = false;
+  window.removeEventListener('deviceorientation',handleOrientation);
   if(liveWatchId !== null){ navigator.geolocation.clearWatch(liveWatchId); liveWatchId=null; }
   if(liveMarker)  { liveMarker.remove();  liveMarker=null;  }
   if(liveCircle)  { liveCircle.remove();  liveCircle=null;  }
@@ -1509,13 +1530,23 @@ function refreshMarkers(){
   if(!osmMap)return;osmMarkers.forEach(m=>m.remove());osmMarkers=[];
   if(!cache.pdvs.length)return;
   const bounds=[];
+  const filterVal = EL('map-filter-visited')?.value || 'all';
+  const todayStr = new Date().toISOString().slice(0,10);
+  const ds = new Date(todayStr+'T00:00:00').toDateString();
+
   cache.pdvs.forEach((pdv,idx)=>{
     if(!pdv.lat||!pdv.lng)return;
     const lat=Number(pdv.lat),lng=Number(pdv.lng);
+    
+    const visitedToday = cache.ventas.some(v => v.pdv_id === pdv.id && (new Date(v.created_at).toDateString()===ds || v.fecha_entrega===todayStr) && v.status==='entregado');
+    if(filterVal === 'visited' && !visitedToday) return;
+    if(filterVal === 'unvisited' && visitedToday) return;
+
     const ventasPDV=cache.ventas.filter(v=>v.pdv_id===pdv.id);
     const totalPDV=ventasPDV.reduce((a,v)=>a+Number(v.total),0);
     const pendPDV=cache.ventas.filter(v=>v.pdv_id===pdv.id&&v.status==='pendiente').length;
-    const icon=L.divIcon({className:'',html:`<div style="position:relative"><div style="width:20px;height:20px;background:linear-gradient(135deg,#00b4ff,#06d6f5);border:2.5px solid #020d18;border-radius:50%;box-shadow:0 0 10px rgba(0,180,255,.7);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#020d18">${idx+1}</div>${pendPDV>0?`<div style="position:absolute;top:-4px;right:-4px;width:10px;height:10px;background:var(--warn);border-radius:50%;border:1.5px solid #020d18"></div>`:''}</div>`,iconSize:[20,20],iconAnchor:[10,10],popupAnchor:[0,-12]});
+    const bgGradient = visitedToday ? 'linear-gradient(135deg,#00f593,#10b981)' : 'linear-gradient(135deg,#00b4ff,#06d6f5)';
+    const icon=L.divIcon({className:'',html:`<div style="position:relative"><div style="width:20px;height:20px;background:${bgGradient};border:2.5px solid #020d18;border-radius:50%;box-shadow:0 0 10px rgba(0,180,255,.7);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#020d18">${idx+1}</div>${pendPDV>0?`<div style="position:absolute;top:-4px;right:-4px;width:10px;height:10px;background:var(--warn);border-radius:50%;border:1.5px solid #020d18"></div>`:''}</div>`,iconSize:[20,20],iconAnchor:[10,10],popupAnchor:[0,-12]});
     const m=L.marker([lat,lng],{icon}).addTo(osmMap);
     const fotoPopup = pdv.foto
       ? `<img src="${pdv.foto}" style="width:100%;height:110px;object-fit:cover;border-radius:7px;margin-bottom:8px;cursor:pointer;display:block" onclick="openFotoVisor(${pdv.id})" title="Ver foto en grande">`
@@ -1546,8 +1577,25 @@ function refreshMarkers(){
 function renderPDVListMap(){
   const el=EL('pdv-list-map');if(!el)return;
   if(!cache.pdvs.length){el.innerHTML='<div style="text-align:center;padding:24px;color:var(--text3);font-size:13px">Sin puntos registrados</div>';return;}
-  el.innerHTML=cache.pdvs.map((pdv,i)=>{
+  
+  const filterVal = EL('map-filter-visited')?.value || 'all';
+  const todayStr = new Date().toISOString().slice(0,10);
+  const ds = new Date(todayStr+'T00:00:00').toDateString();
+
+  let pdvsToShow = [];
+  cache.pdvs.forEach((pdv, i)=>{
+     const visitedToday = cache.ventas.some(v => v.pdv_id === pdv.id && (new Date(v.created_at).toDateString()===ds || v.fecha_entrega===todayStr) && v.status==='entregado');
+     if(filterVal === 'visited' && !visitedToday) return;
+     if(filterVal === 'unvisited' && visitedToday) return;
+     pdvsToShow.push({...pdv, _visited: visitedToday, _original_idx: i});
+  });
+
+  if(!pdvsToShow.length){el.innerHTML='<div style="text-align:center;padding:24px;color:var(--text3);font-size:13px">Sin puntos que coincidan con el filtro</div>';return;}
+
+  el.innerHTML=pdvsToShow.map((pdv)=>{
+    const i = pdv._original_idx;
     const tot=cache.ventas.filter(v=>v.pdv_id===pdv.id).reduce((a,v)=>a+Number(v.total),0);
+    const vBadge = pdv._visited ? '<span class="badge b-green" style="margin-left:6px;font-size:9px">Visitado hoy</span>' : '';
     const fotoHtml = pdv.foto
       ? `<div style="width:56px;height:56px;border-radius:10px;overflow:hidden;flex-shrink:0;cursor:pointer;border:2px solid var(--border2);position:relative" onclick="event.stopPropagation();openFotoVisor(${pdv.id})" title="Ver foto en grande">
            <img src="${pdv.foto}" style="width:100%;height:100%;object-fit:cover">
@@ -1558,7 +1606,7 @@ function renderPDVListMap(){
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px" onclick="focusPDV(${pdv.lat},${pdv.lng},${i})" style="cursor:pointer">
         ${fotoHtml}
         <div style="flex:1;min-width:0;cursor:pointer">
-          <div style="font-weight:800;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${pdv.biz_name}</div>
+          <div style="font-weight:800;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${pdv.biz_name}${vBadge}</div>
           <div style="font-size:11px;color:var(--text2);font-family:var(--mono)">👤 ${pdv.owner_name} · ${pdv.tel||'Sin tel.'}</div>
           <div style="font-size:10px;color:var(--text3)">📍 ${pdv.dir||''}</div>
           <div style="display:flex;align-items:center;gap:6px;margin-top:4px">
