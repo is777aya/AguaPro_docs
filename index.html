@@ -550,6 +550,9 @@ textarea.finput{resize:vertical;min-height:70px;line-height:1.5}
         </div>
       </div>
       <!-- TARJETAS PDV -->
+      <div class="fg" style="margin-bottom:12px">
+        <input type="text" class="finput" id="buscador-pdv-venta" placeholder="🔍 Buscar por nombre o propietario..." onkeyup="renderPDVVentaCards()">
+      </div>
       <div id="pdv-venta-cards">
         <div style="text-align:center;padding:28px;color:var(--text3);font-size:13px">Cargando puntos de venta...</div>
       </div>
@@ -1860,9 +1863,16 @@ function initVentaDia(){
 function renderPDVVentaCards(){
   const cont=EL('pdv-venta-cards');if(!cont)return;
   if(!cache.pdvs.length){cont.innerHTML='<div style="text-align:center;padding:28px;color:var(--text3);font-size:13px">Sin PDV registrados. Ve al m\u00f3dulo Mapa PDV para agregar.</div>';return;}
+  
+  const buscador = EL('buscador-pdv-venta');
+  const filtro = buscador ? buscador.value.toLowerCase() : '';
+  const pdvsToShow = cache.pdvs.filter(p => !filtro || (p.biz_name && p.biz_name.toLowerCase().includes(filtro)) || (p.owner_name && p.owner_name.toLowerCase().includes(filtro)));
+  
+  if(!pdvsToShow.length){cont.innerHTML='<div style="text-align:center;padding:28px;color:var(--text3);font-size:13px">No se encontraron resultados</div>';return;}
+
   const pg=parseFloat(EL('vd-precio-global')?.value)||0.4;
   if(!EL('no-spin')){const s=document.createElement('style');s.id='no-spin';s.textContent='input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}input[type=number]{-moz-appearance:textfield}';document.head.appendChild(s);}
-  cont.innerHTML=cache.pdvs.map(pdv=>{
+  cont.innerHTML=pdvsToShow.map(pdv=>{
     const ses=ventaSession[pdv.id]||{};
     const qty=ses.qty||0;
     const precio=ses.precio||pg;
