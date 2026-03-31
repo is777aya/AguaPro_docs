@@ -765,9 +765,10 @@ textarea.finput{resize:vertical;min-height:70px;line-height:1.5}
     </div>
     <div class="fg"><label class="flabel">Sachet por pedido promedio</label><input type="number" class="finput" id="pdv-capacidad" placeholder="100" min="1"></div>
     <div class="card-title" style="margin-bottom:10px">Georreferencia</div>
+    <div id="modal-map" style="height:180px;background:var(--bg3);border-radius:var(--r2);border:1px solid var(--border2);margin-bottom:12px;z-index:1"></div>
     <div class="gps-bar" style="margin-bottom:13px">
       <div class="gps-led" id="modal-gps-led"></div>
-      <div style="flex:1"><div class="gps-coord" id="modal-gps-coord">Sin ubicación capturada</div><div class="gps-acc" id="modal-gps-acc">Presiona Ubicar</div></div>
+      <div style="flex:1"><div class="gps-coord" id="modal-gps-coord">Sin ubicación capturada</div><div class="gps-acc" id="modal-gps-acc">Arrastra el pin o presiona Ubicar</div></div>
       <button class="btn btn-sm btn-ghost" onclick="getGPSModal()">Ubicar</button>
     </div>
     <button class="btn btn-water btn-full" onclick="savePDV()">💧 Guardar PDV</button>
@@ -1108,6 +1109,7 @@ document.getElementById('sql-box').textContent=SQL;
 let SB=null, isOnline=false;
 let cache={produccion:[],perdidas:[],pdvs:[],ventas:[],finanzas:[],config:{stock_max:10000}};
 let osmMap=null, osmMarkers=[], routeLayer=null;
+let modalMap=null, modalMarker=null;
 let modalLat=null, modalLng=null, currentPhoto=null;
 
 // ============================================================
@@ -1178,9 +1180,77 @@ function switchTab(el,tabId){const parent=el.closest('.screen')||el.closest('.mo
 // find all [id^=tab] or matching siblings
 const base=el.parentElement.parentElement;base.querySelectorAll('[id^="t"]').forEach(t=>{if(t.id&&t.id!==el.id&&!t.classList.contains('tab')&&!t.classList.contains('tabs'))t.style.display='none';});
 const target=EL(tabId);if(target)target.style.display='block';}
-function openModal(id){EL(id).classList.add('open');document.body.style.overflow='hidden';}
-function closeModal(id){EL(id).classList.remove('open');document.body.style.overflow='';}
+function openModal(id){
+  EL(id).classList.add('open');
+  document.body.style.overflow='hidden';
+  if(id==='modal-pdv') setTimeout(initModalMap, 300);
+}
+function closeModal(id){
+  EL(id).classList.remove('open');
+  document.body.style.overflow='';
+  if(id==='modal-pdv') { modalLat=null; modalLng=null; }
+}
 function closeModalOut(e,id){if(e.target===e.currentTarget)closeModal(id);}
+
+// ============================================================
+// MODAL MAP & REVERSE GEOCODING
+// ============================================================
+function initModalMap(){
+  const lat = modalLat || (-16.5);
+  const lng = modalLng || (-68.15);
+  
+  if(!modalMap){
+    modalMap = L.map('modal-map', {zoomControl: false}).setView([lat, lng], 16);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(modalMap);
+    
+    modalMarker = L.marker([lat, lng], {
+      draggable: true,
+      icon: L.divIcon({
+        className: '',
+        html: `<div style="width:24px;height:24px;background:linear-gradient(135deg,var(--accent2),var(--accent));border:2px solid #020d18;border-radius:50%;box-shadow:0 0 10px rgba(0,229,255,.6)"></div>`,
+        iconSize: [24, 24],
+        iconAnchor: [12, 12]
+      })
+    }).addTo(modalMap);
+
+    modalMarker.on('dragend', function(e) {
+      const pos = e.target.getLatLng();
+      updateModalLocation(pos.lat, pos.lng, true);
+    });
+
+    modalMap.on('click', function(e) {
+      modalMarker.setLatLng(e.latlng);
+      updateModalLocation(e.latlng.lat, e.latlng.lng, true);
+    });
+  } else {
+    modalMap.setView([lat, lng], 16);
+    modalMarker.setLatLng([lat, lng]);
+    setTimeout(() => modalMap.invalidateSize(), 100);
+  }
+}
+
+async function updateModalLocation(lat, lng, doReverse = false){
+  modalLat = lat;
+  modalLng = lng;
+  EL('modal-gps-coord').textContent = lat.toFixed(6) + ', ' + lng.toFixed(6);
+  EL('modal-gps-led').classList.add('on');
+  
+  if(doReverse){
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`, {
+        headers: { 'Accept-Language': 'es' }
+      });
+      const data = await res.json();
+      if(data && data.display_name){
+        // Limpiar dirección (usar partes más relevantes)
+        const addr = data.address;
+        const shortAddr = [addr.road, addr.house_number, addr.suburb, addr.neighbourhood].filter(Boolean).join(', ');
+        if(shortAddr) EL('pdv-dir').value = shortAddr;
+        else EL('pdv-dir').value = data.display_name.split(',').slice(0,3).join(',');
+      }
+    } catch(e) { console.log('Reverse geocoding error:', e); }
+  }
+}
 
 // ============================================================
 // GPS
@@ -1364,7 +1434,28 @@ function getGPS(){
   if(liveActive){ toast('Seguimiento activo — tu posición ya está en el mapa'); return; }
   startLiveTracking();
 }
-function getGPSModal(){if(!navigator.geolocation)return toast('GPS no disponible');EL('modal-gps-led').classList.add('on');navigator.geolocation.getCurrentPosition(pos=>{modalLat=pos.coords.latitude;modalLng=pos.coords.longitude;EL('modal-gps-coord').textContent=pos.coords.latitude.toFixed(5)+', '+pos.coords.longitude.toFixed(5);EL('modal-gps-acc').textContent='±'+Math.round(pos.coords.accuracy)+'m';toast('✓ Ubicación capturada');},()=>{EL('modal-gps-led').classList.remove('on');toast('No se pudo obtener GPS');},{enableHighAccuracy:true});}
+function getGPSModal(){
+  if(!navigator.geolocation) return toast('GPS no disponible');
+  showLoad('Obteniendo ubicación precisa...');
+  navigator.geolocation.getCurrentPosition(pos=>{
+    hideLoad();
+    const lat = pos.coords.latitude;
+    const lng = pos.coords.longitude;
+    EL('modal-gps-led').classList.add('on');
+    EL('modal-gps-coord').textContent = lat.toFixed(6) + ', ' + lng.toFixed(6);
+    EL('modal-gps-acc').textContent = 'Precisión: ±' + Math.round(pos.coords.accuracy) + 'm';
+    
+    if(modalMap){
+      modalMap.setView([lat, lng], 17);
+      modalMarker.setLatLng([lat, lng]);
+    }
+    updateModalLocation(lat, lng, true);
+    toast('✓ Ubicación capturada');
+  }, (err)=>{
+    hideLoad();
+    toast('No se pudo obtener GPS: ' + err.message, true);
+  }, {enableHighAccuracy:true, timeout:10000});
+}
 
 // ============================================================
 // CAMERA
@@ -1688,10 +1779,11 @@ function editPDV(pdvId){
   EL('pdv-capacidad').value= pdv.capacidad||100;
   // Show current GPS
   if(pdv.lat&&pdv.lng){
-    EL('modal-gps-coord').textContent = Number(pdv.lat).toFixed(5)+', '+Number(pdv.lng).toFixed(5);
-    EL('modal-gps-acc').textContent   = 'Ubicación guardada — presiona Ubicar para actualizar';
+    const lat = Number(pdv.lat), lng = Number(pdv.lng);
+    EL('modal-gps-coord').textContent = lat.toFixed(6)+', '+lng.toFixed(6);
+    EL('modal-gps-acc').textContent   = 'Ubicación guardada — arrastra el pin para ajustar';
     EL('modal-gps-led').classList.add('on');
-    modalLat = null; modalLng = null; // only override if user presses Ubicar
+    modalLat = lat; modalLng = lng;
   }
   // Show current photo
   if(pdv.foto){
