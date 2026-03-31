@@ -606,6 +606,7 @@ textarea.finput{resize:vertical;min-height:70px;line-height:1.5}
     <div class="metric green"><div class="m-label">Ventas hoy</div><div class="m-val green" id="d-venta-hoy">Bs.0</div></div>
     <div class="metric water"><div class="m-label">Stock</div><div class="m-val blue" id="d-stock">0</div><div class="m-sub">disponibles</div></div>
     <div class="metric"><div class="m-label">PDV activos</div><div class="m-val cyan" id="d-pdvs">0</div></div>
+    <div class="metric warn" style="grid-column: span 2;"><div class="m-label">Ventas acumuladas</div><div class="m-val warn" id="d-venta-total">Bs.0</div><div class="m-sub">Total histórico</div></div>
   </div>
   <!-- SEMANA -->
   <div class="card">
@@ -2399,7 +2400,7 @@ function renderStockAjustes(){
 // ============================================================
 // DASHBOARD
 // ============================================================
-function refreshDash(){
+async function refreshDash(){
   const tdStr      = today();
   // Producción de hoy
   const prodHoy    = cache.produccion.filter(p=>new Date(p.created_at).toDateString()===tdStr).reduce((a,p)=>a+p.qty,0);
@@ -2417,6 +2418,14 @@ function refreshDash(){
   set('d-venta-hoy', fmtBs(ventasHoy));
   set('d-stock',     fmtNum(stockActual));
   set('d-pdvs',      cache.pdvs.length);
+
+  if(SB && isOnline) {
+    const { data, error } = await SB.rpc('ventas_total_acumulado');
+    if(!error && data !== null) set('d-venta-total', fmtBs(data));
+  } else {
+    const totalCache = cache.ventas.reduce((a,v) => a + Number(v.total||0), 0);
+    set('d-venta-total', fmtBs(totalCache));
+  }
 
   // Gráfico 7 días producción
   const days=['L','M','M','J','V','S','D'], tnow=new Date();
