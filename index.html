@@ -802,8 +802,8 @@ textarea.finput{resize:vertical;min-height:70px;line-height:1.5}
       <div id="mvp-boni-row" style="display:none;align-items:center;gap:10px;background:rgba(255,184,48,.08);border:1px solid rgba(255,184,48,.3);border-radius:8px;padding:10px 12px">
         <span style="font-size:22px">🎁</span>
         <div style="flex:1">
-          <div style="font-size:13px;font-weight:800;color:var(--warn)"><span id="mvp-boni-qty">0</span> sachet bonificados</div>
-          <div style="font-size:11px;color:var(--text2);font-family:var(--mono)">Costo: <span id="mvp-boni-costo">Bs. 0.00</span> · 1 cada 10 paquetes</div>
+          <div style="font-size:13px;font-weight:800;color:var(--warn)"><input type="number" id="mvp-boni-qty" value="0" min="0" oninput="onInputMVPBoni()" style="width:40px;height:24px;border-radius:4px;background:var(--bg);border:1px solid var(--border);color:var(--warn);font-family:var(--mono);font-size:12px;font-weight:800;text-align:center;margin-right:6px"> sachet bonificados</div>
+          <div style="font-size:11px;color:var(--text2);font-family:var(--mono)">Costo: <span id="mvp-boni-costo">Bs. 0.00</span></div>
         </div>
       </div>
     </div>
@@ -1820,20 +1820,28 @@ function toggleBoniPDV(pdvId){
   // Update toggle switch
   const sw  = EL('vcard-boni-sw-'+pdvId);
   const lbl = EL('vcard-boni-lbl-'+pdvId);
+  const qtyInput = EL('vcard-boniqty-'+pdvId);
   if(sw){
     sw.style.background = newState?'var(--warn)':'var(--text3)';
     const thumb = sw.querySelector('div');
     if(thumb) thumb.style.left = newState?'16px':'2px';
   }
-  if(lbl) lbl.style.color = newState?'var(--warn)':'var(--text3)';
+  if(lbl) {
+    lbl.style.color = newState?'var(--warn)':'var(--text3)';
+    lbl.textContent = newState ? 'Sachets extra:' : 'Desactivada';
+  }
+  if(qtyInput) {
+    qtyInput.style.display = newState ? 'block' : 'none';
+    qtyInput.value = boni;
+  }
   // Recalculate boni in session
   const ses = ventaSession[pdvId];
   if(ses){
     const pb = ses.precio_boni || parseFloat(EL('vd-precio-boni')?.value)||ses.precio||0.4;
     ses.bonificacion = boni;
+    ses.manual_boni = false;
     ses.total_boni   = boni * pb;
     ses.saved        = false; // mark unsaved
-    if(lbl) lbl.textContent = newState && boni>0 ? boni+' sachet' : 'Desactivada';
   }
   updateVentaDiaCounters();
   toast(newState?'🎁 Bonificación activada para '+cache.pdvs.find(p=>p.id===pdvId)?.biz_name:'Bonificación desactivada');
@@ -1907,13 +1915,14 @@ function renderPDVVentaCards(){
           <div id="vcard-total-${pdv.id}" style="font-size:22px;font-weight:800;font-family:var(--mono);color:var(--success)">${fmtBs(qty*precio)}</div>
           <div style="font-size:10px;color:var(--text3);font-family:var(--mono)">@ Bs.${precio.toFixed(2)} / sachet</div>
           <!-- BONI POR PDV -->
-          <div style="margin-top:7px;display:flex;align-items:center;gap:7px;padding:6px 8px;background:rgba(255,184,48,.06);border:1px solid rgba(255,184,48,.2);border-radius:7px;cursor:pointer" onclick="toggleBoniPDV(${pdv.id})" title="Activar/desactivar bonificación para este PDV">
-            <span style="font-size:15px">🎁</span>
-            <div style="flex:1;min-width:0">
+          <div style="margin-top:7px;display:flex;align-items:center;gap:7px;padding:6px 8px;background:rgba(255,184,48,.06);border:1px solid rgba(255,184,48,.2);border-radius:7px">
+            <span style="font-size:15px;cursor:pointer" onclick="toggleBoniPDV(${pdv.id})">🎁</span>
+            <div style="flex:1;min-width:0;cursor:pointer" onclick="toggleBoniPDV(${pdv.id})">
               <div style="font-size:10px;color:var(--text3);font-family:var(--mono)">Bonificación</div>
-              <div id="vcard-boni-lbl-${pdv.id}" style="font-size:11px;font-weight:800;color:${getBoniPDV(pdv.id)?'var(--warn)':'var(--text3)'}">${getBoniPDV(pdv.id)?Math.floor(qty/10)+' sachet':'Desactivada'}</div>
+              <div id="vcard-boni-lbl-${pdv.id}" style="font-size:11px;font-weight:800;color:${getBoniPDV(pdv.id)?'var(--warn)':'var(--text3)'}">${getBoniPDV(pdv.id)?'Sachets extra:':'Desactivada'}</div>
             </div>
-            <div id="vcard-boni-sw-${pdv.id}" style="width:32px;height:18px;border-radius:9px;background:${getBoniPDV(pdv.id)?'var(--warn)':'var(--text3)'};position:relative;transition:background .2s;flex-shrink:0">
+            <input type="number" id="vcard-boniqty-${pdv.id}" value="${ses.bonificacion!==undefined ? ses.bonificacion : (getBoniPDV(pdv.id) ? Math.floor(qty/10) : 0)}" min="0" style="width:40px;height:24px;border-radius:4px;background:var(--bg);border:1px solid var(--border);color:var(--warn);font-family:var(--mono);font-size:12px;font-weight:800;text-align:center;display:${getBoniPDV(pdv.id)?'block':'none'}" oninput="onInputManualBoni(${pdv.id}, this)">
+            <div id="vcard-boni-sw-${pdv.id}" style="width:32px;height:18px;border-radius:9px;background:${getBoniPDV(pdv.id)?'var(--warn)':'var(--text3)'};position:relative;transition:background .2s;flex-shrink:0;cursor:pointer" onclick="toggleBoniPDV(${pdv.id})">
               <div style="width:14px;height:14px;border-radius:50%;background:#fff;position:absolute;top:2px;transition:left .2s;left:${getBoniPDV(pdv.id)?'16px':'2px'}"></div>
             </div>
           </div>
@@ -1938,12 +1947,41 @@ function stepVenta(pdvId, delta){
 // Keep old name as alias for any remaining references
 function changeVentaPDV(pdvId, delta){ stepVenta(pdvId, delta); }
 
+function onInputManualBoni(pdvId, inputEl){
+  const val = parseInt(inputEl.value)||0;
+  if(!ventaSession[pdvId]) ventaSession[pdvId]={qty:0,precio:parseFloat(EL('vd-precio-global')?.value)||0.4,pago:'efectivo',notas:'',saved:false};
+  ventaSession[pdvId].bonificacion = Math.max(0, val);
+  ventaSession[pdvId].manual_boni = true;
+  ventaSession[pdvId].saved = false;
+  const pb = ventaSession[pdvId].precio_boni || parseFloat(EL('vd-precio-boni')?.value)||ventaSession[pdvId].precio||0.4;
+  ventaSession[pdvId].total_boni = val * pb;
+  const btn = EL('vcard-btn-'+pdvId);
+  const badge = EL('vcard-badge-'+pdvId);
+  if(btn && ventaSession[pdvId].qty > 0){
+    btn.disabled = false;
+    btn.style.cssText = 'font-size:12px;padding:9px 12px;background:linear-gradient(135deg,var(--accent),var(--water));color:#020d18;font-weight:800;border:none';
+    btn.innerHTML = '&#128167; Guardar';
+    if(badge){ badge.className = 'badge b-warn'; badge.textContent = 'Pendiente'; }
+  }
+  updateVentaDiaCounters();
+}
+
 function onInputVenta(pdvId, inputEl){
   const val   = parseInt(inputEl.value)||0;
   const precio = ventaSession[pdvId]?.precio || parseFloat(EL('vd-precio-global')?.value)||0.4;
-  const boni   = Math.floor(val/10);
   if(!ventaSession[pdvId]) ventaSession[pdvId]={qty:0,precio,pago:'efectivo',notas:'',saved:false,bonificacion:0};
   ventaSession[pdvId].qty          = Math.max(0,val);
+  
+  let boni = 0;
+  if(getBoniPDV(pdvId)){
+    if(ventaSession[pdvId].manual_boni && ventaSession[pdvId].bonificacion !== undefined) {
+      boni = ventaSession[pdvId].bonificacion;
+    } else {
+      boni = Math.floor(val/10);
+      const boniInput = EL('vcard-boniqty-'+pdvId);
+      if(boniInput) boniInput.value = boni;
+    }
+  }
   ventaSession[pdvId].bonificacion = boni;
   ventaSession[pdvId].saved        = false;
   // Input styles
@@ -2016,19 +2054,40 @@ function openVentaPDV(pdvId){
   openModal('modal-venta-pdv');
 }
 
-function updateMVPTotal(){
+function onInputMVPBoni(){
+  if(!mvpCurrentPDV) return;
+  const val = parseInt(EL('mvp-boni-qty')?.value)||0;
+  if(!ventaSession[mvpCurrentPDV]) ventaSession[mvpCurrentPDV] = {qty:0,precio:0.4,pago:'efectivo',notas:'',saved:false};
+  ventaSession[mvpCurrentPDV].bonificacion = val;
+  ventaSession[mvpCurrentPDV].manual_boni = true;
+  updateMVPTotal(true);
+}
+
+function updateMVPTotal(isManualBoniCall = false){
   const q     = parseInt(EL('mvp-qty')?.value)||0;
   const p     = parseFloat(EL('mvp-precio')?.value)||0;
   const pb    = parseFloat(EL('vd-precio-boni')?.value)||p; // precio bonificacion
-  const boni  = (mvpCurrentPDV ? getBoniPDV(mvpCurrentPDV) : boniActiva) ? Math.floor(q/10) : 0;
+  
+  let boni = 0;
+  if (mvpCurrentPDV && getBoniPDV(mvpCurrentPDV)) {
+     if (ventaSession[mvpCurrentPDV] && (ventaSession[mvpCurrentPDV].manual_boni || isManualBoniCall) && ventaSession[mvpCurrentPDV].bonificacion !== undefined) {
+       boni = ventaSession[mvpCurrentPDV].bonificacion;
+     } else {
+       boni = Math.floor(q/10);
+     }
+  }
+  
+  if(mvpCurrentPDV && ventaSession[mvpCurrentPDV] && !isManualBoniCall) {
+     const bQty  = EL('mvp-boni-qty');
+     if(bQty && !ventaSession[mvpCurrentPDV].manual_boni) bQty.value = boni;
+  }
+  
   const total = q*p;
   const costoBoni = boni*pb;
   const t = EL('mvp-total'); if(t) t.textContent = fmtBs(total);
   const bRow  = EL('mvp-boni-row');
-  const bQty  = EL('mvp-boni-qty');
   const bCost = EL('mvp-boni-costo');
-  if(bRow)  bRow.style.display  = boni>0?'flex':'none';
-  if(bQty)  bQty.textContent    = boni;
+  if(bRow)  bRow.style.display  = getBoniPDV(mvpCurrentPDV)?'flex':'none';
   if(bCost) bCost.textContent   = fmtBs(costoBoni);
 }
 
@@ -2039,10 +2098,15 @@ async function saveMVPVenta(){
   const precio_boni = parseFloat(EL('vd-precio-boni')?.value)||precio;
   const pago      = EL('mvp-pago').value;
   const notas     = EL('mvp-notas').value;
-  const boni      = boniActiva ? Math.floor(qty/10) : 0;
+  
+  const bQtyEl = EL('mvp-boni-qty');
+  const boni = bQtyEl ? (parseInt(bQtyEl.value)||0) : (boniActiva ? Math.floor(qty/10) : 0);
   const total_boni = boni*precio_boni;
   if(qty <= 0) return toast('Ingresa una cantidad mayor a 0',true);
-  ventaSession[mvpCurrentPDV] = { qty, precio, precio_boni, pago, notas, bonificacion:boni, total_boni, saved:false };
+  
+  const wasManual = ventaSession[mvpCurrentPDV]?.manual_boni || false;
+  ventaSession[mvpCurrentPDV] = { qty, precio, precio_boni, pago, notas, bonificacion:boni, manual_boni:wasManual, total_boni, saved:false };
+  
   closeModal('modal-venta-pdv');
   await guardarVentaPDV(mvpCurrentPDV);
 }
