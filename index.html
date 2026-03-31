@@ -607,6 +607,11 @@ textarea.finput{resize:vertical;min-height:70px;line-height:1.5}
     <div class="metric water"><div class="m-label">Stock</div><div class="m-val blue" id="d-stock">0</div><div class="m-sub">disponibles</div></div>
     <div class="metric"><div class="m-label">PDV activos</div><div class="m-val cyan" id="d-pdvs">0</div></div>
   </div>
+<div class="card">
+  <div class="card-title">💰 Total ventas acumuladas</div>
+  <div id="dash-total-ventas"></div>
+</div>
+  
   <!-- SEMANA -->
   <div class="card">
     <div class="card-title">Sachet producidos — últimos 7 días</div>
@@ -2597,6 +2602,29 @@ async function replayRoute(routeId){
     EL('setup-screen').style.display='flex';
   }
 })();
+
+ // TOTAL VENTAS
+  async function getTotalVentas() {
+  const { data, error } = await supabase.rpc('ventas_total_acumulado');
+
+  if (error) {
+    console.error(error);
+    return 0;
+  }
+
+  return data;
+}
+
+ // total ventas dashboard
+  async function loadTotalVentas() {
+  const total = await getTotalVentas();
+
+  document.getElementById('dash-total-ventas').innerHTML = `
+    <div style="font-size:24px;font-weight:800;color:var(--success)">
+      Bs. ${Number(total).toFixed(2)}
+    </div>
+  `;
+}  
 </script>
 </body>
 </html>
