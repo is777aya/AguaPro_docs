@@ -608,8 +608,8 @@ textarea.finput{resize:vertical;min-height:70px;line-height:1.5}
     <div class="metric"><div class="m-label">PDV activos</div><div class="m-val cyan" id="d-pdvs">0</div></div>
   </div>
 <div class="card">
-  <div class="card-title">💰 Total ventas acumuladas</div>
-  <div id="dash-total-ventas"></div>
+  <div class="card-title">💰 TOTAL VENTAS ACUMULADAS</div>
+  <div id="dash-total-ventas">Cargando...</div>
 </div>
   
   <!-- SEMANA -->
@@ -2617,13 +2617,30 @@ async function replayRoute(routeId){
 
  // total ventas dashboard
   async function loadTotalVentas() {
-  const total = await getTotalVentas();
+  try {
+    const { data, error } = await supabase.rpc('ventas_total_acumulado');
 
-  document.getElementById('dash-total-ventas').innerHTML = `
-    <div style="font-size:24px;font-weight:800;color:var(--success)">
-      Bs. ${Number(total).toFixed(2)}
-    </div>
-  `;
+    if (error) {
+      console.error("Error Supabase:", error);
+      document.getElementById('dash-total-ventas').innerHTML = "Error";
+      return;
+    }
+
+    const total = data || 0;
+
+    document.getElementById('dash-total-ventas').innerHTML = `
+      <div style="
+        font-size:28px;
+        font-weight:900;
+        color:var(--success)
+      ">
+        Bs. ${Number(total).toFixed(2)}
+      </div>
+    `;
+
+  } catch (err) {
+    console.error("Error general:", err);
+  }
 }  
 </script>
 </body>
