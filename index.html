@@ -607,10 +607,6 @@ textarea.finput{resize:vertical;min-height:70px;line-height:1.5}
     <div class="metric water"><div class="m-label">Stock</div><div class="m-val blue" id="d-stock">0</div><div class="m-sub">disponibles</div></div>
     <div class="metric"><div class="m-label">PDV activos</div><div class="m-val cyan" id="d-pdvs">0</div></div>
   </div>
-  <div class="metric green">
-  <div class="m-label">Ventas acumuladas</div>
-  <div class="m-val green" id="d-total-acum">Bs.0</div>
-</div>
   <!-- SEMANA -->
   <div class="card">
     <div class="card-title">Sachet producidos — últimos 7 días</div>
@@ -2403,7 +2399,7 @@ function renderStockAjustes(){
 // ============================================================
 // DASHBOARD
 // ============================================================
-async function refreshDash(){
+function refreshDash(){
   const tdStr      = today();
   // Producción de hoy
   const prodHoy    = cache.produccion.filter(p=>new Date(p.created_at).toDateString()===tdStr).reduce((a,p)=>a+p.qty,0);
@@ -2461,9 +2457,7 @@ async function refreshDash(){
         <div style="font-size:10px;color:var(--text3);font-family:var(--mono)">${fmtNum(p.sachets)} u.</div>
       </div>
     </div>`).join(''):'<div style="font-size:12px;color:var(--text3);padding:8px 0">Sin ventas asignadas a PDV</div>';
-// 👇 AGREGA ESTO AL FINAL
-  await loadTotalVentas();
-}
+
   // Pendientes
   const pend=cache.ventas.filter(v=>v.status==='pendiente');
   const pc=EL('dash-pend-count');if(pc)pc.textContent=pend.length;
@@ -2603,22 +2597,6 @@ async function replayRoute(routeId){
     EL('setup-screen').style.display='flex';
   }
 })();
-
-async function loadTotalVentas() {
-  const el = document.getElementById('d-total-acum');
-  if (!el) return;
-
-  const { data, error } = await supabase.rpc('ventas_total_acumulado');
-
-  if (error) {
-    console.error("Error:", error);
-    el.textContent = "Error";
-    return;
-  }
-
-  el.textContent = "Bs. " + Number(data || 0).toFixed(2);
-}
-  
 </script>
 </body>
 </html>
