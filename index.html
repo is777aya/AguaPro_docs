@@ -63,6 +63,18 @@
       z-index: 0
     }
 
+    /* Quitar flechas de input number */
+    input[type=number]::-webkit-outer-spin-button,
+    input[type=number]::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      appearance: none;
+      margin: 0;
+    }
+
+    input[type=number] {
+      -moz-appearance: textfield;
+    }
+
     /* SETUP */
     .setup-screen {
       position: fixed;
@@ -2565,15 +2577,6 @@ create policy "open" on ventas for all using (true) with check (true);
 create policy "open" on config for all using (true) with check (true);
 -- Insertar config inicial
 insert into config(key,value) values('stock_max','10000') on conflict(key) do nothing;
-create table if not exists sessions (
-  id bigint primary key generated always as identity,
-  user_id uuid,
-  user_name text,
-  user_role text,
-  action text,
-  device text,
-  created_at timestamptz default now()
-);
 create table if not exists route_history (
   id bigint primary key generated always as identity,
   fecha date,
@@ -2585,9 +2588,7 @@ create table if not exists route_history (
   stops jsonb,
   created_at timestamptz default now()
 );
-alter table sessions enable row level security;
 alter table route_history enable row level security;
-create policy "open" on sessions for all using (true) with check (true);
 create policy "open" on route_history for all using (true) with check (true);
 create table if not exists finanzas (
   id bigint primary key generated always as identity,
@@ -2993,12 +2994,6 @@ create policy "open" on finanzas for all using (true) with check (true);`;
       document.head.appendChild(s);
     })();
 
-    // Keep old getGPS for modal use
-    function getGPS() {
-      if (!osmMap) return;
-      if (liveActive) { toast('Seguimiento activo — tu posición ya está en el mapa'); return; }
-      startLiveTracking();
-    }
     function getGPSModal() {
       if (!navigator.geolocation) return toast('GPS no disponible');
       showLoad('Obteniendo ubicación precisa...');
@@ -3623,7 +3618,6 @@ create policy "open" on finanzas for all using (true) with check (true);`;
       if (!pdvsToShow.length) { cont.innerHTML = '<div style="text-align:center;padding:28px;color:var(--text3);font-size:13px">No se encontraron resultados</div>'; return; }
 
       const pg = parseFloat(EL('vd-precio-global')?.value) || 0.4;
-      if (!EL('no-spin')) { const s = document.createElement('style'); s.id = 'no-spin'; s.textContent = 'input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}input[type=number]{-moz-appearance:textfield}'; document.head.appendChild(s); }
       cont.innerHTML = pdvsToShow.map(pdv => {
         const ses = ventaSession[pdv.id] || {};
         const qty = ses.qty || 0;
@@ -3688,8 +3682,6 @@ create policy "open" on finanzas for all using (true) with check (true);`;
       inputEl.value = newVal;
       onInputVenta(pdvId, inputEl);
     }
-    // Keep old name as alias for any remaining references
-    function changeVentaPDV(pdvId, delta) { stepVenta(pdvId, delta); }
 
     function onInputManualBoni(pdvId, inputEl) {
       const val = parseInt(inputEl.value) || 0;
@@ -4499,7 +4491,6 @@ create policy "open" on finanzas for all using (true) with check (true);`;
 
       const pdvsConGPS = cache.pdvs.filter(pdv => {
         if (!pdv.lat || !pdv.lng) return false;
-        if (filterZone !== 'all' && pdv.zona !== filterZone) return false;
         if (filterDay !== 'all' && pdv.dia_visita !== filterDay) return false;
         const visitedToday = cache.ventas.some(v => v.pdv_id === pdv.id && (new Date(v.created_at).toDateString() === ds || v.fecha_entrega === todayStr) && v.status === 'entregado');
         if (filterVal === 'visited' && !visitedToday) return false;
