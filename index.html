@@ -466,37 +466,19 @@ textarea.finput{resize:vertical;min-height:70px;line-height:1.5}
     <div class="live-coords" id="live-coords">Obteniendo posición...</div>
     <div class="live-acc" id="live-acc">Precisión: —</div>
     <div class="live-speed" id="live-speed"></div>
+    <div id="live-compass" style="position:absolute;top:50%;right:10px;transform:translateY(-50%);width:40px;height:40px;border-radius:50%;background:rgba(0,180,255,.1);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;transition:transform 0.1s linear;font-size:20px;box-shadow:0 0 8px rgba(0,180,255,.4)">🧭</div>
   </div>
 
-  <div style="background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r2);padding:10px;margin-bottom:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
-    <div>
-        <label class="flabel" style="font-size:9px;margin-bottom:4px">📍 Filtrar por Ruta Estratégica</label>
-        <select class="finput" id="map-filter-route" onchange="refreshMarkers();renderPDVListMap()" style="height:38px;font-size:12px">
-            <option value="all">Todas las zonas</option>
-            <option value="Sur">🔵 Lunes: SUR (Calacoto/Sur)</option>
-            <option value="Norte">🔴 Miér: NORTE (Pampahasi/Ecuador)</option>
-            <option value="Oeste">🟢 Dom: OESTE (Armonía/Chasquipampa)</option>
-        </select>
-    </div>
-    <div>
-        <label class="flabel" style="font-size:9px;margin-bottom:4px">Estado de Visita</label>
-        <select class="finput" id="map-filter-visited" onchange="refreshMarkers();renderPDVListMap()" style="height:38px;font-size:12px">
-            <option value="all">Todos los estados</option>
-            <option value="unvisited">Pendientes hoy</option>
-            <option value="visited">Visitados hoy</option>
-        </select>
-    </div>
+  <div style="display:flex;gap:8px;margin-bottom:10px">
+    <select class="finput" id="map-filter-visited" onchange="refreshMarkers();renderPDVListMap()" style="flex:1;padding:8px 12px;font-size:12px;height:34px">
+      <option value="all">Ver todos los PDV</option>
+      <option value="unvisited">Faltan visitar (Azul)</option>
+      <option value="visited">Ya visitados hoy (Verde)</option>
+    </select>
   </div>
   <div id="osm-map"></div>
 
   <div id="pdv-container-map" style="margin-top:12px">
-    <div id="route-summary" style="display:none;background:linear-gradient(135deg,rgba(0,180,255,.15),rgba(0,229,255,.05));border:1px solid var(--border2);border-radius:var(--r2);padding:12px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">
-        <div>
-            <div id="rs-title" style="font-size:13px;font-weight:800;color:var(--accent)">Ruta: Seleccionar zona</div>
-            <div id="rs-count" style="font-size:11px;color:var(--text2);margin-top:2px">0 PDVs en esta ruta</div>
-        </div>
-        <button class="btn btn-water btn-sm" onclick="calcRoute()">🗺 Optimizar vía GPS</button>
-    </div>
     <button class="btn btn-water btn-full" style="margin-bottom:12px" onclick="openModal('modal-pdv')">+ Registrar nuevo PDV</button>
     <div id="pdv-list-map"><div style="text-align:center;padding:24px;color:var(--text3);font-size:13px">Sin puntos registrados</div></div>
   </div>
@@ -649,7 +631,7 @@ textarea.finput{resize:vertical;min-height:70px;line-height:1.5}
       <div class="metric danger"><div class="m-label">Egresos globales</div><div class="m-val red" id="f-egreso-total">Bs.0</div></div>
       <div class="metric warn" style="grid-column: span 2;"><div class="m-label">Balance Total Histórico</div><div class="m-val warn" id="f-balance-total">Bs.0</div></div>
     </div>
-    
+
     <div class="card">
       <div class="card-title">Resumen del Día</div>
       <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center">
@@ -747,25 +729,12 @@ textarea.finput{resize:vertical;min-height:70px;line-height:1.5}
     <div class="fg"><label class="flabel">Nombre del negocio</label><input type="text" class="finput" id="pdv-name" placeholder="Ej: Tienda Don Pepe"></div>
     <div class="fg"><label class="flabel">Teléfono</label><input type="tel" class="finput" id="pdv-tel" placeholder="+591 7XXXXXXX"></div>
     <div class="fg"><label class="flabel">Dirección</label><input type="text" class="finput" id="pdv-dir" placeholder="Calle, zona, referencia"></div>
-    <div class="fg" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:0">
-        <div><label class="flabel">Zona Geográfica</label>
-            <select class="finput" id="pdv-zona">
-                <option value="Sur">Sur (Calacoto/Obrajes)</option>
-                <option value="Norte">Norte (Pampahasi/Ecuador)</option>
-                <option value="Oeste">Oeste (Armonía/Chasquipampa)</option>
-                <option value="Otro">Otro / Central</option>
-            </select>
-        </div>
-        <div><label class="flabel">Día de Ruteo</label>
-            <select class="finput" id="pdv-ruta-dia">
-                <option value="Lunes">Lunes (Ruta Sur)</option>
-                <option value="Miercoles">Miércoles (Ruta Norte)</option>
-                <option value="Domingo">Domingo (Ruta Oeste)</option>
-                <option value="Martes">Martes</option><option value="Jueves">Jueves</option><option value="Viernes">Viernes</option><option value="Sabado">Sábado</option>
-            </select>
-        </div>
-    </div>
     <div class="fg"><label class="flabel">Tipo de negocio</label>
+      <select class="finput" id="pdv-tipo">
+        <option>Tienda de barrio</option><option>Mercado / Feria</option><option>Minimarket</option>
+        <option>Restaurante</option><option>Hotel / Hostal</option><option>Dispensario</option><option>Otro</option>
+      </select>
+    </div>
     <div class="fg"><label class="flabel">Sachet por pedido promedio</label><input type="number" class="finput" id="pdv-capacidad" placeholder="100" min="1"></div>
     <div class="card-title" style="margin-bottom:10px">Georreferencia</div>
     <div id="modal-map" style="height:180px;background:var(--bg3);border-radius:var(--r2);border:1px solid var(--border2);margin-bottom:12px;z-index:1"></div>
@@ -1028,8 +997,6 @@ create table if not exists pdvs (
   tel text,
   dir text,
   tipo text,
-  zona text,
-  ruta_dia text,
   capacidad integer default 100,
   lat double precision,
   lng double precision,
@@ -1203,11 +1170,11 @@ function closeModalOut(e,id){if(e.target===e.currentTarget)closeModal(id);}
 function initModalMap(){
   const lat = modalLat || (-16.5);
   const lng = modalLng || (-68.15);
-  
+
   if(!modalMap){
     modalMap = L.map('modal-map', {zoomControl: false}).setView([lat, lng], 16);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(modalMap);
-    
+
     modalMarker = L.marker([lat, lng], {
       draggable: true,
       icon: L.divIcon({
@@ -1239,7 +1206,7 @@ async function updateModalLocation(lat, lng, doReverse = false){
   modalLng = lng;
   EL('modal-gps-coord').textContent = lat.toFixed(6) + ', ' + lng.toFixed(6);
   EL('modal-gps-led').classList.add('on');
-  
+
   if(doReverse){
     try {
       const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`, {
@@ -1276,6 +1243,12 @@ function toggleLiveTracking(){
   else           startLiveTracking();
 }
 
+function handleOrientation(e){
+  if(e.webkitCompassHeading) liveHeading = e.webkitCompassHeading;
+  else if(e.alpha !== null) liveHeading = 360 - e.alpha;
+  const compass = EL('live-compass');
+  if(compass && liveHeading !== null) compass.style.transform = `translateY(-50%) rotate(${liveHeading}deg)`;
+}
 function handleOrientation(e){ }
 
 function startLiveTracking(){
@@ -1352,6 +1325,8 @@ function onLivePosition(pos){
     osmMap.setView([myLat, myLng], osmMap.getZoom(), { animate: true, duration: 0.8 });
   }
 
+  // Refresh PDV list to update context if needed (removed nav list but maybe list has distances)
+  // renderPDVListMap(); // Keep list static unless filtered
   // ALERTA DE PDV CERCANO
   checkProximityAlert(myLat, myLng);
 }
@@ -1438,7 +1413,7 @@ function getGPSModal(){
     EL('modal-gps-led').classList.add('on');
     EL('modal-gps-coord').textContent = lat.toFixed(6) + ', ' + lng.toFixed(6);
     EL('modal-gps-acc').textContent = 'Precisión: ±' + Math.round(pos.coords.accuracy) + 'm';
-    
+
     if(modalMap){
       modalMap.setView([lat, lng], 17);
       modalMarker.setLatLng([lat, lng]);
@@ -1617,18 +1592,16 @@ function refreshMarkers(){
   if(!cache.pdvs.length)return;
   const bounds=[];
   const filterVal = EL('map-filter-visited')?.value || 'all';
-  const filterZona = EL('map-filter-route')?.value || 'all';
   const todayStr = new Date().toISOString().slice(0,10);
   const ds = new Date(todayStr+'T00:00:00').toDateString();
 
   cache.pdvs.forEach((pdv,idx)=>{
     if(!pdv.lat||!pdv.lng)return;
     const lat=Number(pdv.lat),lng=Number(pdv.lng);
-    
+
     const visitedToday = cache.ventas.some(v => v.pdv_id === pdv.id && (new Date(v.created_at).toDateString()===ds || v.fecha_entrega===todayStr) && v.status==='entregado');
     if(filterVal === 'visited' && !visitedToday) return;
     if(filterVal === 'unvisited' && visitedToday) return;
-    if(filterZona !== 'all' && pdv.zona !== filterZona) return;
 
     const ventasPDV=cache.ventas.filter(v=>v.pdv_id===pdv.id);
     const totalPDV=ventasPDV.reduce((a,v)=>a+Number(v.total),0);
@@ -1665,7 +1638,7 @@ function refreshMarkers(){
 function renderPDVListMap(){
   const el=EL('pdv-list-map');if(!el)return;
   if(!cache.pdvs.length){el.innerHTML='<div style="text-align:center;padding:24px;color:var(--text3);font-size:13px">Sin puntos registrados</div>';return;}
-  
+
   const filterVal = EL('map-filter-visited')?.value || 'all';
   const todayStr = new Date().toISOString().slice(0,10);
   const ds = new Date(todayStr+'T00:00:00').toDateString();
@@ -1739,8 +1712,6 @@ async function savePDV(){
     if(modalLng) updates.lng = modalLng;
     // Solo actualizar foto si se tomó una nueva
     if(currentPhoto) updates.foto = currentPhoto;
-    updates.zona = V('pdv-zona');
-    updates.ruta_dia = V('pdv-ruta-dia');
     const ok = await dbUpdate('pdvs', parseInt(editId), updates);
     if(!ok) return;
     closeModal('modal-pdv'); resetPDVForm();
@@ -1755,9 +1726,7 @@ async function savePDV(){
       capacidad: parseInt(V('pdv-capacidad'))||100,
       lat: modalLat||(-16.5+(Math.random()-.5)*.15),
       lng: modalLng||(-68.15+(Math.random()-.5)*.15),
-      foto: currentPhoto||null, initials,
-      zona: V('pdv-zona'),
-      ruta_dia: V('pdv-ruta-dia')
+      foto: currentPhoto||null, initials
     };
     const saved = await dbInsert('pdvs', record); if(!saved) return;
     closeModal('modal-pdv'); resetPDVForm();
@@ -1777,8 +1746,6 @@ function editPDV(pdvId){
   EL('pdv-dir').value      = pdv.dir||'';
   EL('pdv-tipo').value     = pdv.tipo||'Tienda de barrio';
   EL('pdv-capacidad').value= pdv.capacidad||100;
-  EL('pdv-zona').value= pdv.zona||'Otro';
-  EL('pdv-ruta-dia').value= pdv.ruta_dia||'Lunes';
   // Show current GPS
   if(pdv.lat&&pdv.lng){
     const lat = Number(pdv.lat), lng = Number(pdv.lng);
@@ -2026,11 +1993,11 @@ function initVentaDia(){
 function renderPDVVentaCards(){
   const cont=EL('pdv-venta-cards');if(!cont)return;
   if(!cache.pdvs.length){cont.innerHTML='<div style="text-align:center;padding:28px;color:var(--text3);font-size:13px">Sin PDV registrados. Ve al m\u00f3dulo Mapa PDV para agregar.</div>';return;}
-  
+
   const buscador = EL('buscador-pdv-venta');
   const filtro = buscador ? buscador.value.toLowerCase() : '';
   const pdvsToShow = cache.pdvs.filter(p => !filtro || (p.biz_name && p.biz_name.toLowerCase().includes(filtro)) || (p.owner_name && p.owner_name.toLowerCase().includes(filtro)));
-  
+
   if(!pdvsToShow.length){cont.innerHTML='<div style="text-align:center;padding:28px;color:var(--text3);font-size:13px">No se encontraron resultados</div>';return;}
 
   const pg=parseFloat(EL('vd-precio-global')?.value)||0.4;
@@ -2126,7 +2093,7 @@ function onInputVenta(pdvId, inputEl){
   const precio = ventaSession[pdvId]?.precio || parseFloat(EL('vd-precio-global')?.value)||0.4;
   if(!ventaSession[pdvId]) ventaSession[pdvId]={qty:0,precio,pago:'efectivo',notas:'',saved:false,bonificacion:0};
   ventaSession[pdvId].qty          = Math.max(0,val);
-  
+
   let boni = 0;
   if(getBoniPDV(pdvId)){
     if(ventaSession[pdvId].manual_boni && ventaSession[pdvId].bonificacion !== undefined) {
@@ -2222,7 +2189,7 @@ function updateMVPTotal(isManualBoniCall = false){
   const q     = parseInt(EL('mvp-qty')?.value)||0;
   const p     = parseFloat(EL('mvp-precio')?.value)||0;
   const pb    = parseFloat(EL('vd-precio-boni')?.value)||p; // precio bonificacion
-  
+
   let boni = 0;
   if (mvpCurrentPDV && getBoniPDV(mvpCurrentPDV)) {
      if (ventaSession[mvpCurrentPDV] && (ventaSession[mvpCurrentPDV].manual_boni || isManualBoniCall) && ventaSession[mvpCurrentPDV].bonificacion !== undefined) {
@@ -2231,12 +2198,12 @@ function updateMVPTotal(isManualBoniCall = false){
        boni = Math.floor(q/10);
      }
   }
-  
+
   if(mvpCurrentPDV && ventaSession[mvpCurrentPDV] && !isManualBoniCall) {
      const bQty  = EL('mvp-boni-qty');
      if(bQty && !ventaSession[mvpCurrentPDV].manual_boni) bQty.value = boni;
   }
-  
+
   const total = q*p;
   const costoBoni = boni*pb;
   const t = EL('mvp-total'); if(t) t.textContent = fmtBs(total);
@@ -2253,15 +2220,15 @@ async function saveMVPVenta(){
   const precio_boni = parseFloat(EL('vd-precio-boni')?.value)||precio;
   const pago      = EL('mvp-pago').value;
   const notas     = EL('mvp-notas').value;
-  
+
   const bQtyEl = EL('mvp-boni-qty');
   const boni = bQtyEl ? (parseInt(bQtyEl.value)||0) : (boniActiva ? Math.floor(qty/10) : 0);
   const total_boni = boni*precio_boni;
   if(qty <= 0) return toast('Ingresa una cantidad mayor a 0',true);
-  
+
   const wasManual = ventaSession[mvpCurrentPDV]?.manual_boni || false;
   ventaSession[mvpCurrentPDV] = { qty, precio, precio_boni, pago, notas, bonificacion:boni, manual_boni:wasManual, total_boni, saved:false };
-  
+
   closeModal('modal-venta-pdv');
   await guardarVentaPDV(mvpCurrentPDV);
 }
@@ -2876,107 +2843,7 @@ function exportData(){
 }
 
 
-// ============================================================
-// SISTEMA DE RUTEO ESTRATÉGICO
-// ============================================================
-async function calcRoute(){
-  const filterZona = EL('map-filter-route')?.value || 'all';
-  const pdvsZona = cache.pdvs.filter(p => p.lat && p.lng && (filterZona === 'all' || p.zona === filterZona));
-  
-  if(!pdvsZona.length) return toast('No hay PDVs en esta zona para rutear', true);
-  
-  showLoad('Calculando ruta óptima para la zona '+filterZona+'...');
-
-  const doRoute=(startLat,startLng)=>{
-    let remaining=[...pdvsZona], sorted=[], clat=startLat, clng=startLng;
-    while(remaining.length){
-      let best=null, bestD=Infinity;
-      remaining.forEach(p=>{const d=Math.hypot(Number(p.lat)-clat,Number(p.lng)-clng);if(d<bestD){bestD=d;best=p;}});
-      sorted.push(best);
-      remaining=remaining.filter(p=>p.id!==best.id);
-      clat=Number(best.lat);clng=Number(best.lng);
-    }
-    
-    hideLoad();
-    if(routeLayer) osmMap.removeLayer(routeLayer);
-    const latlngs=[[startLat,startLng],...sorted.map(p=>[Number(p.lat),Number(p.lng)])];
-    if(osmMap){
-        routeLayer=L.polyline(latlngs,{color:filterZona==='Sur'?'#00b4ff':filterZona==='Norte'?'#ff4560':'#00f593',weight:4,opacity:.8,dashArray:'8,8'}).addTo(osmMap);
-        osmMap.fitBounds(routeLayer.getBounds(),{padding:[40,40]});
-    }
-    
-    // Guardar ruta histórica (opcional, habilitamos localmente)
-    toast('✓ Ruta '+(filterZona!=='all'?filterZona:'global')+' optimizada: '+sorted.length+' paradas');
-    renderPDVListMap(sorted); // Mostrar la lista en el orden de la ruta
-  };
-
-  if(navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(pos=>doRoute(pos.coords.latitude,pos.coords.longitude),()=>doRoute(Number(pdvsZona[0].lat),Number(pdvsZona[0].lng)),{enableHighAccuracy:true,timeout:5000});
-  } else {
-    doRoute(Number(pdvsZona[0].lat),Number(pdvsZona[0].lng));
-  }
-}
-
-function updateRouteSummary(list){
-    const rs = EL('route-summary');
-    const fz = EL('map-filter-route')?.value || 'all';
-    if(fz === 'all' && !routeLayer) { if(rs) rs.style.display='none'; return; }
-    if(rs) rs.style.display='flex';
-    EL('rs-title').textContent = fz==='all' ? 'Mapa Global' : 'Ruta: ' + fz;
-    EL('rs-count').textContent = list.length + ' puntos de venta';
-}
-
-async function renderPDVListMap(orderedList = null){
-  const el=EL('pdv-list-map');if(!el)return;
-  if(!cache.pdvs.length){el.innerHTML='<div style="text-align:center;padding:24px;color:var(--text3);font-size:13px">Sin puntos registrados</div>';return;}
-  
-  const filterVal = EL('map-filter-visited')?.value || 'all';
-  const filterZona = EL('map-filter-route')?.value || 'all';
-  const todayStr = new Date().toISOString().slice(0,10);
-  const ds = new Date(todayStr+'T00:00:00').toDateString();
-
-  let pdvsToShow = orderedList || [];
-  if(!orderedList){
-    cache.pdvs.forEach((pdv, i)=>{
-        const visitedToday = cache.ventas.some(v => v.pdv_id === pdv.id && (new Date(v.created_at).toDateString()===ds || v.fecha_entrega===todayStr) && v.status==='entregado');
-        if(filterVal === 'visited' && !visitedToday) return;
-        if(filterVal === 'unvisited' && visitedToday) return;
-        if(filterZona !== 'all' && pdv.zona !== filterZona) return;
-        pdvsToShow.push({...pdv, _visited: visitedToday, _original_idx: i});
-    });
-  } else {
-     pdvsToShow = orderedList.map(p => {
-         const visitedToday = cache.ventas.some(v => v.pdv_id === p.id && (new Date(v.created_at).toDateString()===ds || v.fecha_entrega===todayStr) && v.status==='entregado');
-         return {...p, _visited: visitedToday};
-     });
-  }
-
-  updateRouteSummary(pdvsToShow);
-
-  if(!pdvsToShow.length){el.innerHTML='<div style="text-align:center;padding:24px;color:var(--text3);font-size:13px">Sin puntos que coincidan con la zona '+filterZona+'</div>';return;}
-
-  el.innerHTML=pdvsToShow.map((pdv)=>{
-    const i = cache.pdvs.findIndex(p=>p.id===pdv.id);
-    const tot=cache.ventas.filter(v=>v.pdv_id===pdv.id).reduce((a,v)=>a+Number(v.total),0);
-    const vBadge = pdv._visited ? '<span class="badge b-green" style="margin-left:6px;font-size:9px">Visitado hoy</span>' : '';
-    const zonaBadge = `<span class="badge ${pdv.zona==='Sur'?'b-blue':pdv.zona==='Norte'?'b-red':'b-green'}" style="margin-left:6px;font-size:9px">${pdv.zona||'Sin zona'}</span>`;
-    
-    return`<div class="card" style="margin-bottom:10px">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px" onclick="focusPDV(${pdv.lat},${pdv.lng},${i})">
-        <div style="width:40px;height:40px;border-radius:10px;overflow:hidden;flex-shrink:0;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:var(--accent);border:1px solid var(--border)">${pdv.foto?`<img src="${pdv.foto}" style="width:100%;height:100%;object-fit:cover">`:pdv.initials}</div>
-        <div style="flex:1;min-width:0;cursor:pointer">
-          <div style="font-weight:800;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${pdv.biz_name}${vBadge}${zonaBadge}</div>
-          <div style="font-size:11px;color:var(--text2);font-family:var(--mono)">👤 ${pdv.owner_name}</div>
-          <div style="font-size:10px;color:var(--text3)">📍 ${pdv.dir||''} &middot; ${pdv.ruta_dia||''}</div>
-        </div>
-      </div>
-      <div style="display:flex;gap:7px">
-        <button class="btn btn-ghost btn-sm" style="flex:1;font-size:11px" onclick="focusPDV(${pdv.lat},${pdv.lng},${i})">🗺 Mapa</button>
-        <button class="btn btn-water btn-sm" style="flex:1;font-size:11px" onclick="editPDV(${pdv.id})">✏ Editar PDV</button>
-      </div>
-    </div>`;
-  }).join('');
-}
+// Rutas y navegación eliminadas a petición
 
 // ============================================================
 // FINANZAS
@@ -2988,11 +2855,11 @@ async function saveFinanza() {
   const concepto = V('fr-concepto').trim() || 'Sin especificar';
   const fecha = V('fr-fecha') || new Date().toISOString().slice(0,10);
   const notas = V('fr-notas').trim();
-  
+
   const record = { tipo, monto, concepto, notas, fecha, created_at: new Date().toISOString() };
   const saved = await dbInsert('finanzas', record);
   if(!saved) return;
-  
+
   EL('fr-monto').value = ''; EL('fr-concepto').value = ''; EL('fr-notas').value = '';
   refreshFinanzas();
   toast('✓ Movimiento guardado');
@@ -3007,15 +2874,15 @@ async function refreshFinanzas() {
   const boniCostoGlobal  = cache.ventas.filter(v=>v.status==='entregado').reduce((a,v) => a + Number(v.total_boni||0), 0);
   const extrasAcum = cache.finanzas.filter(f => f.tipo==='ingreso_extra').reduce((a,f)=>a+Number(f.monto), 0);
   const gastosAcum = cache.finanzas.filter(f => f.tipo==='gasto').reduce((a,f)=>a+Number(f.monto), 0);
-  
+
   const ingresoTotalGlobal = ventasRealGlobal + extrasAcum;
   const egresoTotalGlobal = gastosAcum + boniCostoGlobal;
   const balanceGlobal = ingresoTotalGlobal - egresoTotalGlobal;
-  
+
   const set=(id,v)=>{const e=EL(id);if(e)e.textContent=v;};
   set('f-ingreso-total', fmtBs(ingresoTotalGlobal));
   set('f-egreso-total', fmtBs(egresoTotalGlobal));
-  
+
   const bEl=EL('f-balance-total');
   if(bEl) {
     bEl.textContent = fmtBs(balanceGlobal);
@@ -3030,18 +2897,18 @@ async function refreshFinanzas() {
   });
   const ventasHoyInfo   = ventasDelDiaCache.reduce((a,v)=>a+Number(v.total||0), 0);
   const boniCostoHoy    = ventasDelDiaCache.reduce((a,v)=>a+Number(v.total_boni||0), 0);
-  
+
   const finHoy = cache.finanzas.filter(f => f.fecha === dt || new Date(f.created_at).toDateString()===ds);
   const ingresoExtraHoy = finHoy.filter(f => f.tipo==='ingreso_extra').reduce((a,f)=>a+Number(f.monto), 0);
   const gastoHoy = finHoy.filter(f => f.tipo==='gasto').reduce((a,f)=>a+Number(f.monto), 0);
-  
+
   const balanceDia = (ventasHoyInfo + ingresoExtraHoy) - (gastoHoy + boniCostoHoy);
-  
+
   set('f-dia-ventas', fmtBs(ventasHoyInfo));
   set('f-dia-ingreso', fmtBs(ingresoExtraHoy));
   set('f-dia-boni', fmtBs(boniCostoHoy));
   set('f-dia-gasto', fmtBs(gastoHoy));
-  
+
   const bdEl = EL('f-dia-balance');
   if(bdEl) {
     bdEl.textContent = fmtBs(balanceDia);
@@ -3059,7 +2926,7 @@ async function refreshFinanzas() {
   set('f-dia-ventas-fis', fmtNum(ventasHoyFis) + ' sachet');
   set('f-dia-boni-fis', fmtNum(boniHoyFis) + ' sachet');
   set('f-dia-perd-fis', fmtNum(perdHoyFis) + ' sachet');
-  
+
   const bFisEl = EL('f-dia-balance-fis');
   if(bFisEl) {
     bFisEl.textContent = (balanceFis>0?'+':'') + fmtNum(balanceFis) + ' sachet';
