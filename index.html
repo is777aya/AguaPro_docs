@@ -63,18 +63,6 @@
       z-index: 0
     }
 
-    /* Quitar flechas de input number */
-    input[type=number]::-webkit-outer-spin-button,
-    input[type=number]::-webkit-inner-spin-button {
-      -webkit-appearance: none;
-      appearance: none;
-      margin: 0;
-    }
-
-    input[type=number] {
-      -moz-appearance: textfield;
-    }
-
     /* SETUP */
     .setup-screen {
       position: fixed;
@@ -1729,13 +1717,6 @@
       <div class="live-coords" id="live-coords">Obteniendo posición...</div>
       <div class="live-acc" id="live-acc">Precisión: —</div>
       <div class="live-speed" id="live-speed"></div>
-      <!-- BOTON SEGUIR -->
-      <div style="position:absolute;bottom:10px;right:10px;display:flex;align-items:center;gap:6px">
-        <label style="font-size:10px;font-weight:800;color:var(--text3);text-transform:uppercase">Seguir</label>
-        <div id="live-follow-sw" onclick="toggleFollowMode()" style="width:34px;height:18px;border-radius:9px;background:var(--success);position:relative;cursor:pointer;transition:.3s">
-          <div style="width:14px;height:14px;border-radius:50%;background:#fff;position:absolute;top:2px;left:18px;transition:.2s"></div>
-        </div>
-      </div>
       <div id="live-compass"
         style="position:absolute;top:50%;right:10px;transform:translateY(-50%);width:40px;height:40px;border-radius:50%;background:rgba(0,180,255,.1);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;transition:transform 0.1s linear;font-size:20px;box-shadow:0 0 8px rgba(0,180,255,.4)">
         🧭</div>
@@ -1844,7 +1825,6 @@
       <div id="tvd-registrar">
         <!-- FECHA + PRECIO GLOBAL -->
         <div class="card" style="margin-bottom:12px">
-        <div class="card">
           <div class="card-title">Configurar jornada</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
             <div class="fg" style="margin-bottom:0"><label class="flabel">Fecha</label><input type="date" class="finput"
@@ -1892,9 +1872,8 @@
         </div>
         <!-- TARJETAS PDV -->
         <div class="fg" style="margin-bottom:12px">
-          <input type="text" class="finput" id="buscador-pdv-venta" placeholder="Buscar por negocio o dueño..."
-            style="padding-left:38px;background-image:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2216%22 height=%2216%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%232e5f80%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><circle cx=%2211%22 cy=%2211%22 r=%228%22></circle><line x1=%2221%22 y1=%2221%22 x2=%2216.65%22 y2=%2216.65%22></line></svg>');background-repeat:no-repeat;background-position:12px center"
-            oninput="debounceSearch()">
+          <input type="text" class="finput" id="buscador-pdv-venta" placeholder="🔍 Buscar por nombre o propietario..."
+            onkeyup="renderPDVVentaCards()">
         </div>
         <div id="pdv-venta-cards">
           <div style="text-align:center;padding:28px;color:var(--text3);font-size:13px">Cargando puntos de venta...
@@ -2091,49 +2070,9 @@
           <span style="font-size:12px;color:var(--text2)">- Gastos / Egresos</span>
           <span style="font-size:13px;font-weight:700;color:var(--danger)" id="f-dia-gasto">Bs.0.00</span>
         </div>
-        <div style="display:flex;justify-content:space-between;padding:8px 0;margin-top:4px;border-top:2px solid var(--border)">
-          <span style="font-size:13px;font-weight:800;color:var(--text)">Utilidad del Negocio</span>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;margin-top:4px">
+          <span style="font-size:13px;font-weight:800;color:var(--text)">Balance del día</span>
           <span style="font-size:16px;font-weight:800;font-family:var(--mono)" id="f-dia-balance">Bs.0.00</span>
-        </div>
-        <div style="font-size:9px;color:var(--text3);text-align:right;margin-top:-6px;margin-bottom:10px">(Ventas - Gastos - Costo prod. regalado)</div>
-      </div>
-
-      <!-- DINERO EN MANO (FISICO) -->
-      <div class="card" style="background:linear-gradient(135deg,rgba(0,245,147,.05),rgba(6,214,245,.05));border:1.5px solid var(--success)">
-        <div class="card-title" style="color:var(--success);display:flex;align-items:center;gap:8px">
-          <span>💵 Dinero Estimado en Mano (Caja)</span>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:8px">
-          <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2)">
-            <span>Ventas en Efectivo:</span>
-            <span id="f-cash-ventas" style="color:var(--text);font-weight:700">Bs.0.00</span>
-          </div>
-          <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2)">
-            <span>Ingresos Extra:</span>
-            <span id="f-cash-extra" style="color:var(--text);font-weight:700">Bs.0.00</span>
-          </div>
-          <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2)">
-            <span>(-) Gastos pagados:</span>
-            <span id="f-cash-gastos" style="color:var(--danger);font-weight:700">Bs.0.00</span>
-          </div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:1px dashed var(--border2)">
-            <span style="font-size:14px;font-weight:800;color:var(--success)">Efectivo en Caja</span>
-            <div style="text-align:right">
-              <div id="f-caja-fisica" style="font-size:24px;font-weight:900;font-family:var(--mono);color:var(--success);text-shadow:0 0 15px rgba(0,245,147,.3)">Bs.0.00</div>
-              <div style="font-size:9px;color:rgba(0,245,147,.6);text-transform:uppercase;font-weight:700">Dinero que debes tener</div>
-            </div>
-          </div>
-          <div id="f-other-payments" style="font-size:10px;color:var(--text3);font-family:var(--mono);text-align:right;margin-top:4px">
-            QR: Bs.0 | Crédito: Bs.0
-          </div>
-        </div>
-      </div>
-
-      <!-- HISTORIAL DIARIO -->
-      <div class="card">
-        <div class="card-title">🗓 Historial Ganancias por Fecha</div>
-        <div id="f-historial-fechas" style="display:flex;flex-direction:column;gap:10px">
-          <div style="text-align:center;padding:12px;color:var(--text3);font-size:12px">Calculando...</div>
         </div>
       </div>
 
@@ -2626,6 +2565,15 @@ create policy "open" on ventas for all using (true) with check (true);
 create policy "open" on config for all using (true) with check (true);
 -- Insertar config inicial
 insert into config(key,value) values('stock_max','10000') on conflict(key) do nothing;
+create table if not exists sessions (
+  id bigint primary key generated always as identity,
+  user_id uuid,
+  user_name text,
+  user_role text,
+  action text,
+  device text,
+  created_at timestamptz default now()
+);
 create table if not exists route_history (
   id bigint primary key generated always as identity,
   fecha date,
@@ -2637,7 +2585,9 @@ create table if not exists route_history (
   stops jsonb,
   created_at timestamptz default now()
 );
+alter table sessions enable row level security;
 alter table route_history enable row level security;
+create policy "open" on sessions for all using (true) with check (true);
 create policy "open" on route_history for all using (true) with check (true);
 create table if not exists finanzas (
   id bigint primary key generated always as identity,
@@ -2673,8 +2623,7 @@ create policy "open" on finanzas for all using (true) with check (true);`;
     function idbClear(s) { return new Promise((res, rej) => { if (!idb) return res(); const r = idb.transaction(s, 'readwrite').objectStore(s).clear(); r.onsuccess = () => res(); r.onerror = () => res(); }); }
     async function idbSync(s, data) {
       if (!idb) return;
-      // OPTIMIZACION: Ya no borramos todo (idbClear). 
-      // Usamos una transaccion mas eficiente para actualizar solo lo necesario.
+      await idbClear(s);
       return new Promise((res, rej) => {
         const tx = idb.transaction(s, 'readwrite');
         const store = tx.objectStore(s);
@@ -2690,49 +2639,24 @@ create policy "open" on finanzas for all using (true) with check (true);`;
     // ============================================================
     async function initSupabase() { const url = V('cfg-url').trim(), key = V('cfg-key').trim(); if (!url || !key) return toast('Completa URL y Key', true); LS('sb_url', url); LS('sb_key', key); await connectSB(url, key); }
     async function reconnectSB() { const url = V('cfg-url2').trim() || LS('sb_url'), key = V('cfg-key2').trim() || LS('sb_key'); if (!url || !key) return toast('Faltan credenciales', true); LS('sb_url', url); LS('sb_key', key); closeModal('modal-config'); await connectSB(url, key); }
-    async function connectSB(url, key) { 
-      showLoad('Iniciando...'); 
-      try { 
-        SB = window.supabase.createClient(url, key); 
-        isOnline = true; 
-        dot('online'); 
-        // Primero cargamos lo local para que el usuario vea la app de inmediato
-        await loadIDB();
-        startApp(); 
-        hideLoad();
-        // Luego sincronizamos en segundo plano
-        loadAll().then(() => {
-          toast('✓ Sincronizado con la nube');
-        });
-      } catch (e) { 
-        hideLoad(); 
-        toast('Error: ' + (e.message || 'Sin conexión'), true); 
-        dot('error'); 
-        startOffline(); 
-      } 
-    }
+    async function connectSB(url, key) { showLoad('Conectando a Supabase...'); try { SB = window.supabase.createClient(url, key); const { error } = await SB.from('pdvs').select('id').limit(1); if (error) throw error; isOnline = true; dot('online'); await loadAll(); startApp(); toast('✓ Conectado a Supabase'); } catch (e) { hideLoad(); toast('Error: ' + (e.message || 'Sin conexión'), true); dot('error'); } }
     async function startOffline() { isOnline = false; dot('error'); showLoad('Cargando datos locales...'); await loadIDB(); startApp(); toast('Modo offline'); EL('offline-bar').classList.add('show'); }
     async function loadAll() {
-      if (!isOnline || !SB) return;
+      showLoad('Sincronizando datos...');
       try {
-        dot('syncing');
         const promises = STORES.map(async s => {
-          const { data, error } = await SB.from(s).select('*');
+          const { data, error } = await SB.from(s).select('*').order('id', { ascending: true });
           if (!error && data) {
             cache[s] = data;
             await idbSync(s, data);
           }
         });
-        await Promise.all(promises);
-        
-        // Refrescamos las vistas activas con los nuevos datos
-        refreshDash();
-        refreshVentasDia();
-        refreshFinanzas();
-        if (osmMap) refreshMarkers();
-        
-        dot('online');
-      } catch (e) { console.error('Load sync error:', e); dot('error'); }
+        const configPromise = SB.from('config').select('*').then(({ data }) => {
+          if (data) data.forEach(c => cache.config[c.key] = c.value);
+        });
+        await Promise.all([...promises, configPromise]);
+      } catch (e) { console.error('Load sync error:', e); }
+      hideLoad();
     }
     async function dbInsert(table, record) { delete record.id; if (isOnline && SB) { dot('syncing'); const { data, error } = await SB.from(table).insert(record).select().single(); if (error) { dot('error'); toast('Error: ' + error.message, true); return null; } dot('online'); await idbPut(table, data); cache[table].push(data); return data; } else { const tmp = { ...record, id: Date.now() }; cache[table].push(tmp); await idbPut(table, tmp); return tmp; } }
     async function dbUpdate(table, id, upd) { if (isOnline && SB) { dot('syncing'); const { error } = await SB.from(table).update(upd).eq('id', id); if (error) { dot('error'); return false; } dot('online'); } const idx = cache[table].findIndex(r => r.id === id); if (idx !== -1) { Object.assign(cache[table][idx], upd); await idbPut(table, cache[table][idx]); } return true; }
@@ -2906,17 +2830,6 @@ create policy "open" on finanzas for all using (true) with check (true);`;
     let myLat = null;
     let myLng = null;
     let liveActive = false;
-    let followMode = true; // Auto-center by default
-
-    function toggleFollowMode() {
-      followMode = !followMode;
-      const sw = EL('live-follow-sw');
-      if (sw) {
-        sw.style.background = followMode ? 'var(--success)' : 'var(--text3)';
-        sw.querySelector('div').style.left = followMode ? '18px' : '2px';
-      }
-      toast(followMode ? '🧭 Seguimiento automático activado' : '📍 Seguimiento pausado (manual)');
-    }
 
     function toggleLiveTracking() {
       if (liveActive) stopLiveTracking();
@@ -2999,10 +2912,8 @@ create policy "open" on finanzas for all using (true) with check (true);`;
       if (liveCircle) liveCircle.setLatLng([myLat, myLng]).setRadius(acc);
       else liveCircle = L.circle([myLat, myLng], { radius: acc, color: '#00f593', fillColor: '#00f593', fillOpacity: .06, weight: 1 }).addTo(osmMap);
 
-      // Center map if follow mode is active
-      if (followMode) {
-        osmMap.setView([myLat, myLng], osmMap.getZoom(), { animate: true, duration: 1 });
-      }
+      // Pan map smoothly
+      osmMap.panTo([myLat, myLng], { animate: true, duration: 0.5 });
 
       // Refresh nav list if visible
       const navTab = EL('tm-nav');
@@ -3082,6 +2993,12 @@ create policy "open" on finanzas for all using (true) with check (true);`;
       document.head.appendChild(s);
     })();
 
+    // Keep old getGPS for modal use
+    function getGPS() {
+      if (!osmMap) return;
+      if (liveActive) { toast('Seguimiento activo — tu posición ya está en el mapa'); return; }
+      startLiveTracking();
+    }
     function getGPSModal() {
       if (!navigator.geolocation) return toast('GPS no disponible');
       showLoad('Obteniendo ubicación precisa...');
@@ -3706,6 +3623,7 @@ create policy "open" on finanzas for all using (true) with check (true);`;
       if (!pdvsToShow.length) { cont.innerHTML = '<div style="text-align:center;padding:28px;color:var(--text3);font-size:13px">No se encontraron resultados</div>'; return; }
 
       const pg = parseFloat(EL('vd-precio-global')?.value) || 0.4;
+      if (!EL('no-spin')) { const s = document.createElement('style'); s.id = 'no-spin'; s.textContent = 'input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}input[type=number]{-moz-appearance:textfield}'; document.head.appendChild(s); }
       cont.innerHTML = pdvsToShow.map(pdv => {
         const ses = ventaSession[pdv.id] || {};
         const qty = ses.qty || 0;
@@ -3770,6 +3688,8 @@ create policy "open" on finanzas for all using (true) with check (true);`;
       inputEl.value = newVal;
       onInputVenta(pdvId, inputEl);
     }
+    // Keep old name as alias for any remaining references
+    function changeVentaPDV(pdvId, delta) { stepVenta(pdvId, delta); }
 
     function onInputManualBoni(pdvId, inputEl) {
       const val = parseInt(inputEl.value) || 0;
@@ -3815,13 +3735,7 @@ create policy "open" on finanzas for all using (true) with check (true);`;
       const tEl = EL('vcard-total-' + pdvId); if (tEl) tEl.textContent = fmtBs(val * precio);
       // Bonus badge on card
       const boniEl = EL('vcard-boni-' + pdvId);
-      if (boniEl) { 
-        boniEl.style.display = boni > 0 ? 'flex' : 'none'; 
-        const pb = ventaSession[pdvId].precio_boni || parseFloat(EL('vd-precio-boni')?.value) || precio;
-        const costoBoni = boni * pb;
-        const sp = boniEl.querySelector('span:last-child'); 
-        if (sp) sp.textContent = boni + ' bonif. · ' + fmtBs(costoBoni); 
-      }
+      if (boniEl) { boniEl.style.display = boni > 0 ? 'flex' : 'none'; const sp = boniEl.querySelector('span:last-child'); if (sp) sp.textContent = boni + ' bonif. · ' + fmtBs(costoBoni); }
       // Save button
       const btn = EL('vcard-btn-' + pdvId);
       if (btn) {
@@ -4433,7 +4347,7 @@ create policy "open" on finanzas for all using (true) with check (true);`;
     // DASHBOARD
     // ============================================================
     async function refreshDash() {
-      const tdStr = new Date().toDateString();
+      const tdStr = today();
       // Producción de hoy
       const prodHoy = cache.produccion.filter(p => new Date(p.created_at).toDateString() === tdStr).reduce((a, p) => a + p.qty, 0);
       // Ingresos de hoy (venta + costo bonif, para control interno)
@@ -4585,6 +4499,7 @@ create policy "open" on finanzas for all using (true) with check (true);`;
 
       const pdvsConGPS = cache.pdvs.filter(pdv => {
         if (!pdv.lat || !pdv.lng) return false;
+        if (filterZone !== 'all' && pdv.zona !== filterZone) return false;
         if (filterDay !== 'all' && pdv.dia_visita !== filterDay) return false;
         const visitedToday = cache.ventas.some(v => v.pdv_id === pdv.id && (new Date(v.created_at).toDateString() === ds || v.fecha_entrega === todayStr) && v.status === 'entregado');
         if (filterVal === 'visited' && !visitedToday) return false;
@@ -4756,25 +4671,9 @@ create policy "open" on finanzas for all using (true) with check (true);`;
 
       const bdEl = EL('f-dia-balance');
       if (bdEl) {
-        bdEl.innerHTML = `<span style="font-size:10px;color:var(--text3);margin-right:8px">(Utilidad neta)</span> ${fmtBs(balanceDia)}`;
+        bdEl.textContent = fmtBs(balanceDia);
         bdEl.style.color = balanceDia < 0 ? 'var(--danger)' : (balanceDia > 0 ? 'var(--success)' : 'var(--text)');
       }
-
-      // Dinero en Mano (Caja Fisica)
-      const vEfectivo = ventasDelDiaCache.filter(v => v.pago === 'efectivo').reduce((a, v) => a + Number(v.total || 0), 0);
-      const vQR = ventasDelDiaCache.filter(v => v.pago === 'qr').reduce((a, v) => a + Number(v.total || 0), 0);
-      const vCredito = ventasDelDiaCache.filter(v => v.pago === 'credito').reduce((a, v) => a + Number(v.total || 0), 0);
-      
-      const efectivoTotal = (vEfectivo + ingresoExtraHoy) - gastoHoy;
-      
-      set('f-cash-ventas', fmtBs(vEfectivo));
-      set('f-cash-extra', fmtBs(ingresoExtraHoy));
-      set('f-cash-gastos', fmtBs(gastoHoy));
-      set('f-cash-total', fmtBs(efectivoTotal));
-      set('f-other-payments', `QR: Bs.${vQR.toFixed(2)} | Crédito: Bs.${vCredito.toFixed(2)}`);
-
-      // Historial por Fechas (Últimos 10 días)
-      renderFinanzasHistory();
 
       // Cuadre Físico Día
       const prodHoyFis = cache.produccion.filter(p => new Date(p.created_at).toDateString() === ds).reduce((a, p) => a + p.qty, 0);
@@ -4812,44 +4711,6 @@ create policy "open" on finanzas for all using (true) with check (true);`;
       </div>`;
         }).join('') + '</div>';
       }
-    }
-
-    function renderFinanzasHistory() {
-      const el = EL('f-historial-fechas'); if (!el) return;
-      // Indexamos solo las ultimas fechas para rapidez extrema
-      const recentV = cache.ventas.slice(-250);
-      const recentF = cache.finanzas.slice(-100);
-      const dSet = new Set();
-      recentV.forEach(v => dSet.add(v.fecha_entrega || v.created_at.slice(0,10)));
-      recentF.forEach(f => dSet.add(f.fecha || f.created_at.slice(0,10)));
-      const dates = [...dSet].sort().reverse().slice(0, 10);
-      
-      el.innerHTML = dates.map(d => {
-        const ds = new Date(d + 'T00:00:00').toDateString();
-        const vD = recentV.filter(v => (new Date(v.created_at).toDateString() === ds || v.fecha_entrega === d) && v.status === 'entregado');
-        const fD = recentF.filter(f => f.fecha === d || new Date(f.created_at).toDateString() === ds);
-        const tv = vD.reduce((a, v) => a + Number(v.total || 0), 0);
-        const tb = vD.reduce((a, v) => a + Number(v.total_boni || 0), 0);
-        const ti = fD.filter(f => f.tipo === 'ingreso_extra').reduce((a, f) => a + Number(f.monto), 0);
-        const tg = fD.filter(f => f.tipo === 'gasto').reduce((a, f) => a + Number(f.monto), 0);
-        const net = (tv + ti) - (tb + tg);
-        return `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);padding:10px;display:flex;justify-content:space-between;align-items:center">
-          <div>
-            <div style="font-size:12px;font-weight:800;color:var(--accent)">${locDate(d+'T00:00:00').split(',')[0]}</div>
-            <div style="font-size:10px;color:var(--text3);font-family:var(--mono)">Ingreso: Bs.${(tv+ti).toFixed(1)} | Egresos: Bs.${(tb+tg).toFixed(1)}</div>
-          </div>
-          <div style="text-align:right">
-            <div style="font-size:14px;font-weight:800;font-family:var(--mono);color:${net < 0 ? 'var(--danger)' : 'var(--success)'}">Bs.${net.toFixed(2)}</div>
-            <div style="font-size:9px;color:var(--text3)">UTILIDAD REAL</div>
-          </div>
-        </div>`;
-      }).join('');
-    }
-
-    let searchTimeout = null;
-    function debounceSearch() {
-      clearTimeout(searchTimeout);
-      searchTimeout = setTimeout(renderPDVVentaCards, 350);
     }
 
     // ============================================================
