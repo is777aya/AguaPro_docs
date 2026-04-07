@@ -1163,6 +1163,7 @@ const locDate=dt=>new Date(dt).toLocaleDateString('es-BO');
 const locTime=dt=>new Date(dt).toLocaleTimeString('es-BO',{hour:'2-digit',minute:'2-digit'});
 const fmtNum=n=>Number(n||0).toLocaleString('es-BO');
 const fmtBs=n=>'Bs. '+Number(n||0).toFixed(2);
+const normalizeText=t=>(t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().replace(/\s+/g,' ');
 
 function toast(msg,isErr=false){const t=EL('toast');EL('toast-msg').textContent=msg;t.className='toast '+(isErr?'err':'ok')+' show';setTimeout(()=>t.classList.remove('show'),2800);}
 function showLoad(msg='Cargando...'){EL('loading-msg').textContent=msg;EL('loading-overlay').classList.add('show');}
@@ -1750,6 +1751,11 @@ async function savePDV(){
     toast('✓ PDV actualizado');
   } else {
     // ---- NUEVO PDV ----
+    const normBiz = normalizeText(biz);
+    const normOwner = normalizeText(owner);
+    const exists = cache.pdvs.find(p => normalizeText(p.biz_name) === normBiz || (normOwner && normalizeText(p.owner_name) === normOwner));
+    if(exists) return toast(`⚠️ Ya existe un PDV similar: "${exists.biz_name}"`, true);
+
     const record = {
       owner_name:owner, biz_name:biz,
       tel: V('pdv-tel').trim(), dir,
@@ -1827,10 +1833,18 @@ function updatePVTotal(){const q=parseFloat(V('pv-qty'))||0,p=parseFloat(V('pv-p
 async function savePreVenta(){
   const pdvId=V('pv-pdv');if(!pdvId)return toast('Selecciona un PDV',true);
   const qty=parseInt(V('pv-qty'))||0;if(qty<=0)return toast('Cantidad requerida',true);
+  
+  const btn = EL('screen-ventas')?.querySelector('button[onclick="savePreVenta()"]');
+  if(btn && btn.disabled) return;
+  if(btn) btn.disabled = true;
+
   const precio=parseFloat(V('pv-precio'))||0.4;
   const pdv=cache.pdvs.find(p=>p.id==pdvId);
   const record={pdv_id:parseInt(pdvId),pdv_name:pdv.biz_name,qty,precio,total:qty*precio,notas:V('pv-notas'),fecha_entrega:V('pv-fecha'),status:'pendiente'};
-  const saved=await dbInsert('ventas',record);if(!saved)return;
+  const saved=await dbInsert('ventas',record);
+  if(btn) btn.disabled = false;
+  if(!saved) return;
+  
   EL('pv-qty').value='';EL('pv-notas').value='';EL('pv-total').textContent='Bs. 0.00';
   refreshDash();renderPedidos('pendiente');refreshStockTab();
   toast('✓ Pre-venta guardada: '+qty+' sachet para '+pdv.biz_name);
@@ -2082,7 +2096,7 @@ function renderPDVVentaCards(){
         </div>
         <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
           <button class="btn btn-ghost btn-sm" style="font-size:11px" onclick="openVentaPDV(${pdv.id})">&#9881; Detalle</button>
-          <button id="vcard-btn-${pdv.id}" class="btn btn-sm" style="font-size:12px;padding:9px 12px;${bs}" onclick="guardarVentaPDV(${pdv.id})" ${qty>0?'':'disabled'}>${bl}</button>
+          <button id="vcard-btn-${pdv.id}" class="btn btn-sm" style="font-size:12px;padding:9px 12px;${bs}" onclick="guardarVentaPDV(${pdv.id})" ${(qty>0 && !ses.saving) ? '' : 'disabled'}>${ses.saving ? '<span class="water-spinner" style="width:14px;height:14px;border-width:2px"></span>' : bl}</button>
         </div>
       </div>
     </div>`;
@@ -2266,11 +2280,14 @@ async function saveMVPVenta(){
 
 async function guardarVentaPDV(pdvId){
   const ses = ventaSession[pdvId]; if(!ses || ses.qty<=0) return toast('Ingresa una cantidad',true);
+  if(ses.saving) return; // Evitar doble click
+  
   const pdv = cache.pdvs.find(p=>p.id===pdvId); if(!pdv) return;
   const fecha = EL('vd-fecha-reg')?.value || new Date().toISOString().slice(0,10);
 
   // If already saved today, update instead of insert
   if(ses.saved && ses.venta_id){
+    ses.saving = true; renderPDVVentaCards();
     const ok = await dbUpdate('ventas', ses.venta_id, {
       qty: ses.qty,
       precio: ses.precio,
@@ -2281,16 +2298,28 @@ async function guardarVentaPDV(pdvId){
       precio_boni: ses.precio_boni||ses.precio||0,
       total_boni: ses.total_boni||0
     });
+    ses.saving = false;
     if(ok){
       ventaSession[pdvId].saved = true;
       renderPDVVentaCards();
       refreshDash(); refreshStockTab();
       toast('✓ Venta actualizada — '+pdv.biz_name);
+    } else {
+      renderPDVVentaCards();
     }
     return;
   }
 
-  // New venta
+  // New venta - Final check for duplicates in cache (redundancy)
+  const existingVenta = cache.ventas.find(v => v.pdv_id === pdvId && v.fecha_entrega === fecha && v.status === 'entregado');
+  if(existingVenta){
+    const confirmUpdate = confirm(`Ya existe un registro de venta para "${pdv.biz_name}" en esta fecha. ¿Deseas sobreescribirlo?`);
+    if(!confirmUpdate) return;
+    ses.saved = true; ses.venta_id = existingVenta.id;
+    return guardarVentaPDV(pdvId); // Recursive call will now go to the update section
+  }
+
+  ses.saving = true; renderPDVVentaCards();
   const boni = ses.bonificacion !== undefined ? ses.bonificacion : (boniActiva ? Math.floor(ses.qty/10) : 0);
   const precioBoni = ses.precio_boni || ses.precio || 0;
   const record = {
@@ -2308,8 +2337,12 @@ async function guardarVentaPDV(pdvId){
     status: 'entregado'
   };
   const saved = await dbInsert('ventas', record);
-  if(!saved) return;
-  ventaSession[pdvId] = { ...ses, saved:true, venta_id:saved.id };
+  ses.saving = false;
+  if(!saved){
+    renderPDVVentaCards();
+    return;
+  }
+  ventaSession[pdvId] = { ...ses, saved:true, saving:false, venta_id:saved.id };
   renderPDVVentaCards();
   refreshDash(); refreshStockTab();
   const boniMsg = boni>0 ? ` + 🎁 ${boni} bonif.` : '';
