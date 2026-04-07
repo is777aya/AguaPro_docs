@@ -1731,23 +1731,21 @@
       </select>
       <select class="finput" id="map-filter-day" onchange="refreshMarkers();renderPDVListMap()"
         style="flex:1;padding:8px 12px;font-size:12px;height:34px">
-        <option value="all">Dia: Todos</option>
+        <option value="all">Día: Todos</option>
         <option value="Lunes">Lunes</option>
         <option value="Martes">Martes</option>
-        <option value="Miercoles">Miercoles</option>
+        <option value="Miércoles">Miércoles</option>
         <option value="Jueves">Jueves</option>
         <option value="Viernes">Viernes</option>
-        <option value="Sabado">Sabado</option>
+        <option value="Sábado">Sábado</option>
         <option value="Domingo">Domingo</option>
       </select>
       <select class="finput" id="map-filter-zone" onchange="refreshMarkers();renderPDVListMap()"
         style="flex:1;padding:8px 12px;font-size:12px;height:34px">
         <option value="all">Zona: Todas</option>
-        <option value="Sur">Sur</option>
-        <option value="Norte">Norte</option>
-        <option value="Oeste">Oeste</option>
+        <option value="Armonia - Chasquipampa">Armonia - Chasquipampa</option>
         <option value="Centro">Centro</option>
-        <option value="Este">Este</option>
+        <option value="Obrajes - Calacoto - Ovejuyo">Obrajes - Calacoto - Ovejuyo</option>
       </select>
     </div>
     <div id="route-day-suggest" style="background:rgba(0,180,255,.1);border:1px solid var(--border2);border-radius:var(--r2);padding:10px;margin-bottom:12px;display:none;align-items:center;gap:10px">
@@ -2181,11 +2179,9 @@
         <div class="fg"><label class="flabel">Zona de Ruta</label>
           <select class="finput" id="pdv-zona">
             <option value="">-- Sin zona --</option>
-            <option>Sur</option>
-            <option>Norte</option>
-            <option>Oeste</option>
+            <option>Armonia - Chasquipampa</option>
             <option>Centro</option>
-            <option>Este</option>
+            <option>Obrajes - Calacoto - Ovejuyo</option>
           </select>
         </div>
         <div class="fg"><label class="flabel">Día de Visita</label>
@@ -2684,7 +2680,12 @@ create policy "open" on finanzas for all using (true) with check (true);`;
       const d = new Date();
       const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
       const curDayName = days[d.getDay()];
-      const zoneDayMap = { 1: 'Sur', 3: 'Norte', 0: 'Oeste' };
+      // SUGGESTION MAP CUSTOMIZED:
+      const zoneDayMap = { 
+        1: 'Armonia - Chasquipampa', 
+        3: 'Centro', 
+        5: 'Obrajes - Calacoto - Ovejuyo' 
+      };
       const suggestZone = zoneDayMap[d.getDay()];
       
       const selDay = EL('map-filter-day');
