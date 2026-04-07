@@ -478,37 +478,9 @@ textarea.finput{resize:vertical;min-height:70px;line-height:1.5}
   </div>
   <div id="osm-map"></div>
 
-  <!-- TABS -->
-  <div class="tabs" style="margin-top:12px">
-    <div class="tab active" onclick="switchTab(this,'tm-ruta')">Ruta del día</div>
-    <div class="tab" onclick="switchTab(this,'tm-nav');renderNavList()">Navegación</div>
-    <div class="tab" onclick="switchTab(this,'tm-historial');renderRouteHistory()">Historial</div>
-  </div>
-  <div id="tm-ruta">
-    <div class="card" id="route-card">
-      <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
-        <span>🗺 Ruta óptima del día</span>
-        <button class="btn btn-sm btn-ghost" onclick="calcRoute()">Calcular y guardar</button>
-      </div>
-      <div id="route-list"><div style="font-size:12px;color:var(--text3);padding:8px 0">Presiona Calcular para ordenar los PDV por proximidad</div></div>
-    </div>
+  <div id="pdv-container-map" style="margin-top:12px">
     <button class="btn btn-water btn-full" style="margin-bottom:12px" onclick="openModal('modal-pdv')">+ Registrar nuevo PDV</button>
     <div id="pdv-list-map"><div style="text-align:center;padding:24px;color:var(--text3);font-size:13px">Sin puntos registrados</div></div>
-  </div>
-  <!-- TAB NAVEGACIÓN -->
-  <div id="tm-nav" style="display:none">
-    <div style="font-size:11px;color:var(--text2);font-family:var(--mono);margin-bottom:10px;padding:8px 10px;background:var(--bg3);border-radius:var(--r2)">
-      PDVs ordenados por distancia desde tu posición actual. Activa el seguimiento para actualizar en tiempo real.
-    </div>
-    <div id="nav-list"><div style="text-align:center;padding:24px;color:var(--text3);font-size:13px">Activa el seguimiento para ver distancias</div></div>
-  </div>
-
-  <div id="tm-historial" style="display:none">
-    <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center">
-      <input type="date" class="finput" id="rh-fecha" style="flex:1">
-      <button class="btn btn-sm btn-ghost" onclick="renderRouteHistory()">Ver</button>
-    </div>
-    <div id="route-history-list"><div style="text-align:center;padding:28px;color:var(--text3);font-size:13px">Sin rutas guardadas</div></div>
   </div>
 
 </div>
@@ -1347,12 +1319,13 @@ function onLivePosition(pos){
   if(liveCircle) liveCircle.setLatLng([myLat,myLng]).setRadius(acc);
   else           liveCircle = L.circle([myLat,myLng],{radius:acc,color:'#00f593',fillColor:'#00f593',fillOpacity:.06,weight:1}).addTo(osmMap);
 
-  // Pan map smoothly
-  osmMap.panTo([myLat,myLng],{animate:true, duration:0.5});
+  // Pan map smoothly - Google Maps style: always centered when tracking
+  if(osmMap){
+    osmMap.setView([myLat, myLng], osmMap.getZoom(), { animate: true, duration: 0.8 });
+  }
 
-  // Refresh nav list if visible
-  const navTab = EL('tm-nav');
-  if(navTab && navTab.style.display!=='none') renderNavList();
+  // Refresh PDV list to update context if needed (removed nav list but maybe list has distances)
+  // renderPDVListMap(); // Keep list static unless filtered
 }
 
 // Helpers
@@ -1378,47 +1351,7 @@ function compassArrow(bearing){
   return `<div style="font-size:20px;transform:rotate(${rel}deg);transition:transform .4s;display:inline-block">➤</div>`;
 }
 
-// NAV LIST — PDVs sorted by distance from current position
-function renderNavList(){
-  const el = EL('nav-list'); if(!el) return;
-  if(!cache.pdvs.length){ el.innerHTML='<div style="text-align:center;padding:24px;color:var(--text3);font-size:13px">Sin PDV registrados</div>'; return; }
-  if(myLat===null){ el.innerHTML='<div style="text-align:center;padding:24px;color:var(--text3);font-size:13px">Activa el seguimiento para ver distancias en tiempo real</div>'; return; }
-
-  const pdvsConGPS = cache.pdvs.filter(p=>p.lat&&p.lng).map(pdv=>{
-    const km      = haversineKm(myLat,myLng,Number(pdv.lat),Number(pdv.lng));
-    const bearing = bearingDeg(myLat,myLng,Number(pdv.lat),Number(pdv.lng));
-    const ventaHoy = cache.ventas.some(v=>v.pdv_id===pdv.id&&new Date(v.created_at).toDateString()===today()&&v.status==='entregado');
-    return { ...pdv, km, bearing, ventaHoy };
-  }).sort((a,b)=>a.km-b.km);
-
-  const maxKm = pdvsConGPS[pdvsConGPS.length-1]?.km||1;
-
-  el.innerHTML = pdvsConGPS.map((pdv,i)=>{
-    const distClass = pdv.km<0.3?'dist-near':pdv.km<1?'dist-mid':'dist-far';
-    const nearest   = i===0;
-    const av = pdv.foto?`<img src="${pdv.foto}" style="width:100%;height:100%;object-fit:cover">`:(pdv.initials||'?');
-    // Estimated walk/drive time (assume avg 30km/h urban)
-    const minutos = Math.round(pdv.km/30*60);
-    const tiempoStr = minutos<1?'<1 min':minutos<60?minutos+' min':Math.floor(minutos/60)+'h '+( minutos%60)+'min';
-
-    return `<div class="pdv-nav-card ${nearest?'nearest':''}" onclick="focusPDV(${pdv.lat},${pdv.lng},${cache.pdvs.indexOf(pdv)})">
-      <div class="pdv-nav-num ${nearest?'nearest':''}">${i+1}</div>
-      <div style="width:34px;height:34px;border-radius:8px;overflow:hidden;flex-shrink:0;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;color:var(--accent);border:1px solid var(--border)">${av}</div>
-      <div style="flex:1;min-width:0">
-        <div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${pdv.biz_name}</div>
-        <div style="font-size:11px;color:var(--text2)">${pdv.owner_name}</div>
-        <div style="display:flex;align-items:center;gap:6px;margin-top:3px">
-          <span style="font-size:10px;color:var(--text3);font-family:var(--mono)">🕐 ~${tiempoStr}</span>
-          ${pdv.ventaHoy?'<span class="badge b-green" style="font-size:9px;padding:2px 6px">✓ Visitado</span>':'<span class="badge b-warn" style="font-size:9px;padding:2px 6px">Pendiente</span>'}
-        </div>
-      </div>
-      <div style="display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0">
-        ${compassArrow(pdv.bearing)}
-        <span class="dist-badge ${distClass}">${fmtDist(pdv.km)}</span>
-      </div>
-    </div>`;
-  }).join('');
-}
+// renderNavList eliminada
 
 // Add pulse-ring keyframes once
 (function addRingAnim(){
@@ -2874,109 +2807,7 @@ function exportData(){
 }
 
 
-// ============================================================
-// HISTORIAL DE RUTAS
-// ============================================================
-async function calcRoute(){
-  if(!cache.pdvs.length) return toast('No hay PDV registrados',true);
-  const pdvsConGPS=cache.pdvs.filter(p=>p.lat&&p.lng);
-  if(!pdvsConGPS.length) return toast('PDV sin coordenadas GPS',true);
-  const doRoute=(startLat,startLng)=>{
-    let remaining=[...pdvsConGPS],sorted=[],clat=startLat,clng=startLng;
-    while(remaining.length){
-      let best=null,bestD=Infinity;
-      remaining.forEach(p=>{const d=Math.hypot(Number(p.lat)-clat,Number(p.lng)-clng);if(d<bestD){bestD=d;best=p;}});
-      sorted.push(best);remaining=remaining.filter(p=>p.id!==best.id);clat=Number(best.lat);clng=Number(best.lng);
-    }
-    if(routeLayer) osmMap.removeLayer(routeLayer);
-    const latlngs=[[startLat,startLng],...sorted.map(p=>[Number(p.lat),Number(p.lng)])];
-    if(osmMap){routeLayer=L.polyline(latlngs,{color:'#00b4ff',weight:3,opacity:.75,dashArray:'8,6'}).addTo(osmMap);osmMap.fitBounds(routeLayer.getBounds(),{padding:[30,30]});}
-    const el=EL('route-list');
-    if(el) el.innerHTML='<div>'+sorted.map((p,i)=>`<div class="route-item"><div class="route-num">${i+1}</div><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:700">${p.biz_name}</div><div style="font-size:11px;color:var(--text2)">${p.owner_name} · ${p.dir||''}</div></div><span class="badge b-cyan">${p.capacidad||100} uds</span></div>`).join('')+'</div>';
-    // GUARDAR RUTA EN BD
-    saveRouteHistory(sorted, startLat, startLng);
-    toast('✓ Ruta calculada y guardada: '+sorted.length+' PDV');
-  };
-  if(navigator.geolocation) navigator.geolocation.getCurrentPosition(pos=>doRoute(pos.coords.latitude,pos.coords.longitude),()=>doRoute(Number(pdvsConGPS[0].lat),Number(pdvsConGPS[0].lng)),{enableHighAccuracy:true});
-  else doRoute(Number(pdvsConGPS[0].lat),Number(pdvsConGPS[0].lng));
-}
-
-async function saveRouteHistory(sortedPDVs, startLat, startLng){
-  if(!SB) return;
-  try {
-    const record = {
-      fecha: new Date().toISOString().slice(0,10),
-      user_name: 'Admin',
-      user_id: null,
-      total_pdvs: sortedPDVs.length,
-      start_lat: startLat,
-      start_lng: startLng,
-      stops: JSON.stringify(sortedPDVs.map((p,i)=>({order:i+1,pdv_id:p.id,biz_name:p.biz_name,owner:p.owner_name,dir:p.dir,lat:p.lat,lng:p.lng,capacidad:p.capacidad||100})))
-    };
-    const {data} = await SB.from('route_history').insert(record).select().single();
-    if(data){ cache.route_history=cache.route_history||[]; cache.route_history.push(data); }
-  } catch(e){ console.log('route save error:',e); }
-}
-
-async function renderRouteHistory(){
-  const el = EL('route-history-list'); if(!el) return;
-  const dt = V('rh-fecha');
-  // Load from Supabase if online
-  let routes = cache.route_history||[];
-  if(SB && isOnline){
-    const q = SB.from('route_history').select('*').order('id',{ascending:false}).limit(30);
-    if(dt) { const {data}=await q.eq('fecha',dt); routes=data||[]; }
-    else { const {data}=await q; routes=data||[]; }
-    cache.route_history=routes;
-  } else if(dt){
-    routes=routes.filter(r=>r.fecha===dt);
-  }
-  if(!routes.length){el.innerHTML='<div style="text-align:center;padding:28px;color:var(--text3);font-size:13px">Sin rutas guardadas para esta fecha</div>';return;}
-  el.innerHTML=routes.map(r=>{
-    const stops = typeof r.stops==='string'?JSON.parse(r.stops):(r.stops||[]);
-    return`<div class="rh-card">
-      <div class="rh-header">
-        <div>
-          <div class="rh-date">📅 ${r.fecha}</div>
-          <div class="rh-user">👤 ${r.user_name} · ${stops.length} paradas</div>
-        </div>
-        <span class="badge b-cyan">${stops.length} PDV</span>
-      </div>
-      <div class="rh-stops">
-        ${stops.slice(0,6).map(s=>`<div class="rh-stop"><div class="rh-stop-num">${s.order}</div><div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.biz_name}</div><div style="font-size:10px;color:var(--text3)">${s.dir||''}</div></div><span style="font-size:10px;color:var(--text2);font-family:var(--mono);flex-shrink:0">${s.capacidad} u.</span></div>`).join('')}
-        ${stops.length>6?`<div style="font-size:11px;color:var(--text3);padding:6px 0;font-family:var(--mono)">+${stops.length-6} paradas más...</div>`:''}
-      </div>
-      <button class="btn btn-ghost btn-full" style="margin-top:10px;font-size:12px" onclick="replayRoute(${r.id})">🗺 Ver ruta en mapa</button>
-    </div>`;
-  }).join('');
-}
-
-async function replayRoute(routeId){
-  const routes = cache.route_history||[];
-  let route = routes.find(r=>r.id===routeId);
-  if(!route&&SB){ const {data}=await SB.from('route_history').select('*').eq('id',routeId).single(); route=data; }
-  if(!route) return toast('Ruta no encontrada',true);
-  const stops = typeof route.stops==='string'?JSON.parse(route.stops):(route.stops||[]);
-  // Switch to map tab and draw route
-  goScreen('screen-mapa',1);
-  initMap();
-  setTimeout(()=>{
-    if(routeLayer) osmMap.removeLayer(routeLayer);
-    const latlngs=stops.filter(s=>s.lat&&s.lng).map(s=>[Number(s.lat),Number(s.lng)]);
-    if(latlngs.length>0){
-      routeLayer=L.polyline(latlngs,{color:'#ffb830',weight:3,opacity:.8,dashArray:'8,6'}).addTo(osmMap);
-      osmMap.fitBounds(routeLayer.getBounds(),{padding:[30,30]});
-    }
-    // Show in route list
-    const el=EL('route-list');
-    if(el) el.innerHTML='<div style="font-size:11px;color:var(--warn);font-family:var(--mono);margin-bottom:8px">📅 Reproduciendo ruta del '+route.fecha+'</div><div>'+stops.map((s,i)=>`<div class="route-item"><div class="route-num">${i+1}</div><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:700">${s.biz_name}</div><div style="font-size:11px;color:var(--text2)">${s.owner} · ${s.dir||''}</div></div><span class="badge b-warn">${s.capacidad} uds</span></div>`).join('')+'</div>';
-    // Switch to ruta tab
-    const rutaTab=document.querySelector('#tm-ruta');if(rutaTab)rutaTab.style.display='block';
-    const histTab=document.querySelector('#tm-historial');if(histTab)histTab.style.display='none';
-    setTimeout(()=>osmMap.invalidateSize(),300);
-    toast('✓ Mostrando ruta del '+route.fecha+' ('+route.user_name+')');
-  },400);
-}
+// Rutas y navegación eliminadas a petición
 
 // ============================================================
 // FINANZAS
