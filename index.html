@@ -1844,6 +1844,7 @@
       <div id="tvd-registrar">
         <!-- FECHA + PRECIO GLOBAL -->
         <div class="card" style="margin-bottom:12px">
+        <div class="card">
           <div class="card-title">Configurar jornada</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
             <div class="fg" style="margin-bottom:0"><label class="flabel">Fecha</label><input type="date" class="finput"
@@ -1891,8 +1892,9 @@
         </div>
         <!-- TARJETAS PDV -->
         <div class="fg" style="margin-bottom:12px">
-          <input type="text" class="finput" id="buscador-pdv-venta" placeholder="🔍 Buscar por nombre o propietario..."
-            onkeyup="renderPDVVentaCards()">
+          <input type="text" class="finput" id="buscador-pdv-venta" placeholder="Buscar por negocio o dueño..."
+            style="padding-left:38px;background-image:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2216%22 height=%2216%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%232e5f80%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><circle cx=%2211%22 cy=%2211%22 r=%228%22></circle><line x1=%2221%22 y1=%2221%22 x2=%2216.65%22 y2=%2216.65%22></line></svg>');background-repeat:no-repeat;background-position:12px center"
+            oninput="debounceSearch()">
         </div>
         <div id="pdv-venta-cards">
           <div style="text-align:center;padding:28px;color:var(--text3);font-size:13px">Cargando puntos de venta...
@@ -2683,24 +2685,49 @@ create policy "open" on finanzas for all using (true) with check (true);`;
     // ============================================================
     async function initSupabase() { const url = V('cfg-url').trim(), key = V('cfg-key').trim(); if (!url || !key) return toast('Completa URL y Key', true); LS('sb_url', url); LS('sb_key', key); await connectSB(url, key); }
     async function reconnectSB() { const url = V('cfg-url2').trim() || LS('sb_url'), key = V('cfg-key2').trim() || LS('sb_key'); if (!url || !key) return toast('Faltan credenciales', true); LS('sb_url', url); LS('sb_key', key); closeModal('modal-config'); await connectSB(url, key); }
-    async function connectSB(url, key) { showLoad('Conectando a Supabase...'); try { SB = window.supabase.createClient(url, key); const { error } = await SB.from('pdvs').select('id').limit(1); if (error) throw error; isOnline = true; dot('online'); await loadAll(); startApp(); toast('✓ Conectado a Supabase'); } catch (e) { hideLoad(); toast('Error: ' + (e.message || 'Sin conexión'), true); dot('error'); } }
+    async function connectSB(url, key) { 
+      showLoad('Iniciando...'); 
+      try { 
+        SB = window.supabase.createClient(url, key); 
+        isOnline = true; 
+        dot('online'); 
+        // Primero cargamos lo local para que el usuario vea la app de inmediato
+        await loadIDB();
+        startApp(); 
+        hideLoad();
+        // Luego sincronizamos en segundo plano
+        loadAll().then(() => {
+          toast('✓ Sincronizado con la nube');
+        });
+      } catch (e) { 
+        hideLoad(); 
+        toast('Error: ' + (e.message || 'Sin conexión'), true); 
+        dot('error'); 
+        startOffline(); 
+      } 
+    }
     async function startOffline() { isOnline = false; dot('error'); showLoad('Cargando datos locales...'); await loadIDB(); startApp(); toast('Modo offline'); EL('offline-bar').classList.add('show'); }
     async function loadAll() {
-      showLoad('Sincronizando datos...');
+      if (!isOnline || !SB) return;
       try {
+        dot('syncing');
         const promises = STORES.map(async s => {
-          const { data, error } = await SB.from(s).select('*').order('id', { ascending: true });
+          const { data, error } = await SB.from(s).select('*');
           if (!error && data) {
             cache[s] = data;
             await idbSync(s, data);
           }
         });
-        const configPromise = SB.from('config').select('*').then(({ data }) => {
-          if (data) data.forEach(c => cache.config[c.key] = c.value);
-        });
-        await Promise.all([...promises, configPromise]);
-      } catch (e) { console.error('Load sync error:', e); }
-      hideLoad();
+        await Promise.all(promises);
+        
+        // Refrescamos las vistas activas con los nuevos datos
+        refreshDash();
+        refreshVentasDia();
+        refreshFinanzas();
+        if (osmMap) refreshMarkers();
+        
+        dot('online');
+      } catch (e) { console.error('Load sync error:', e); dot('error'); }
     }
     async function dbInsert(table, record) { delete record.id; if (isOnline && SB) { dot('syncing'); const { data, error } = await SB.from(table).insert(record).select().single(); if (error) { dot('error'); toast('Error: ' + error.message, true); return null; } dot('online'); await idbPut(table, data); cache[table].push(data); return data; } else { const tmp = { ...record, id: Date.now() }; cache[table].push(tmp); await idbPut(table, tmp); return tmp; } }
     async function dbUpdate(table, id, upd) { if (isOnline && SB) { dot('syncing'); const { error } = await SB.from(table).update(upd).eq('id', id); if (error) { dot('error'); return false; } dot('online'); } const idx = cache[table].findIndex(r => r.id === id); if (idx !== -1) { Object.assign(cache[table][idx], upd); await idbPut(table, cache[table][idx]); } return true; }
@@ -4724,7 +4751,7 @@ create policy "open" on finanzas for all using (true) with check (true);`;
 
       const bdEl = EL('f-dia-balance');
       if (bdEl) {
-        bdEl.textContent = fmtBs(balanceDia);
+        bdEl.innerHTML = `<span style="font-size:10px;color:var(--text3);margin-right:8px">(Utilidad neta)</span> ${fmtBs(balanceDia)}`;
         bdEl.style.color = balanceDia < 0 ? 'var(--danger)' : (balanceDia > 0 ? 'var(--success)' : 'var(--text)');
       }
 
@@ -4784,39 +4811,40 @@ create policy "open" on finanzas for all using (true) with check (true);`;
 
     function renderFinanzasHistory() {
       const el = EL('f-historial-fechas'); if (!el) return;
-      // Get unique dates from both ventas and finanzas
-      const dates = [...new Set([
-        ...cache.ventas.map(v => v.fecha_entrega || v.created_at.slice(0, 10)),
-        ...cache.finanzas.map(f => f.fecha || f.created_at.slice(0, 10))
-      ])].sort().reverse().slice(0, 10);
-
-      if (!dates.length) { el.innerHTML = '<div style="text-align:center;padding:12px;color:var(--text3);font-size:12px">Sin datos de ventas previos</div>'; return; }
-
+      // Indexamos solo las ultimas fechas para rapidez extrema
+      const recentV = cache.ventas.slice(-250);
+      const recentF = cache.finanzas.slice(-100);
+      const dSet = new Set();
+      recentV.forEach(v => dSet.add(v.fecha_entrega || v.created_at.slice(0,10)));
+      recentF.forEach(f => dSet.add(f.fecha || f.created_at.slice(0,10)));
+      const dates = [...dSet].sort().reverse().slice(0, 10);
+      
       el.innerHTML = dates.map(d => {
         const ds = new Date(d + 'T00:00:00').toDateString();
-        const vD = cache.ventas.filter(v => (new Date(v.created_at).toDateString() === ds || v.fecha_entrega === d) && v.status === 'entregado');
-        const fD = cache.finanzas.filter(f => f.fecha === d || new Date(f.created_at).toDateString() === ds);
-        
-        const totV = vD.reduce((a, v) => a + Number(v.total || 0), 0);
-        const totB = vD.reduce((a, v) => a + Number(v.total_boni || 0), 0);
-        const totIE = fD.filter(f => f.tipo === 'ingreso_extra').reduce((a, f) => a + Number(f.monto), 0);
-        const totG = fD.filter(f => f.tipo === 'gasto').reduce((a, f) => a + Number(f.monto), 0);
-        const net = (totV + totIE) - (totB + totG);
-        
-        // Formatear fecha para mostrar
-        const fLabel = locDate(d + 'T00:00:00').split(',')[0]; 
-        
+        const vD = recentV.filter(v => (new Date(v.created_at).toDateString() === ds || v.fecha_entrega === d) && v.status === 'entregado');
+        const fD = recentF.filter(f => f.fecha === d || new Date(f.created_at).toDateString() === ds);
+        const tv = vD.reduce((a, v) => a + Number(v.total || 0), 0);
+        const tb = vD.reduce((a, v) => a + Number(v.total_boni || 0), 0);
+        const ti = fD.filter(f => f.tipo === 'ingreso_extra').reduce((a, f) => a + Number(f.monto), 0);
+        const tg = fD.filter(f => f.tipo === 'gasto').reduce((a, f) => a + Number(f.monto), 0);
+        const net = (tv + ti) - (tb + tg);
         return `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);padding:10px;display:flex;justify-content:space-between;align-items:center">
           <div>
-            <div style="font-size:12px;font-weight:800;color:var(--accent)">${fLabel}</div>
-            <div style="font-size:10px;color:var(--text3);font-family:var(--mono)">Ventas: ${fmtBs(totV)} | Gastos: ${fmtBs(totG)}</div>
+            <div style="font-size:12px;font-weight:800;color:var(--accent)">${locDate(d+'T00:00:00').split(',')[0]}</div>
+            <div style="font-size:10px;color:var(--text3);font-family:var(--mono)">Ingreso: Bs.${(tv+ti).toFixed(1)} | Egresos: Bs.${(tb+tg).toFixed(1)}</div>
           </div>
           <div style="text-align:right">
-            <div style="font-size:14px;font-weight:800;font-family:var(--mono);color:${net < 0 ? 'var(--danger)' : 'var(--success)'}">${fmtBs(net)}</div>
-            <div style="font-size:9px;color:var(--text3);text-transform:uppercase">Utilidad neta</div>
+            <div style="font-size:14px;font-weight:800;font-family:var(--mono);color:${net < 0 ? 'var(--danger)' : 'var(--success)'}">Bs.${net.toFixed(2)}</div>
+            <div style="font-size:9px;color:var(--text3)">UTILIDAD REAL</div>
           </div>
         </div>`;
       }).join('');
+    }
+
+    let searchTimeout = null;
+    function debounceSearch() {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(renderPDVVentaCards, 350);
     }
 
     // ============================================================
