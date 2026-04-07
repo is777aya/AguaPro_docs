@@ -1740,23 +1740,17 @@
         <option value="Sabado">Sabado</option>
         <option value="Domingo">Domingo</option>
       </select>
-      <select class="finput" id="map-filter-zone" onchange="refreshMarkers();renderPDVListMap()"
-        style="flex:1;padding:8px 12px;font-size:12px;height:34px">
-        <option value="all">Zona: Todas</option>
-        <option value="Sur">Sur</option>
-        <option value="Norte">Norte</option>
-        <option value="Oeste">Oeste</option>
-        <option value="Centro">Centro</option>
-        <option value="Este">Este</option>
-      </select>
     </div>
-    <div id="route-day-suggest" style="background:rgba(0,180,255,.1);border:1px solid var(--border2);border-radius:var(--r2);padding:10px;margin-bottom:12px;display:none;align-items:center;gap:10px">
+    <div id="route-day-suggest"
+      style="background:rgba(0,180,255,.1);border:1px solid var(--border2);border-radius:var(--r2);padding:10px;margin-bottom:12px;display:none;align-items:center;gap:10px">
       <span style="font-size:18px">📌</span>
       <div style="flex:1">
         <div style="font-size:12px;font-weight:800;color:var(--accent)" id="suggest-day-text">Hoy es Lunes</div>
-        <div style="font-size:11px;color:var(--text2)">Ruta sugerida: <span style="font-weight:700;color:var(--water)">Zona Sur</span></div>
+        <div style="font-size:11px;color:var(--text2)">Ruta sugerida: <span
+            style="font-weight:700;color:var(--water)">Zona Sur</span></div>
       </div>
-      <button class="btn btn-sm btn-ghost" onclick="applySuggestedFilter()" style="font-size:10px">Filtrar ahora</button>
+      <button class="btn btn-sm btn-ghost" onclick="applySuggestedFilter()" style="font-size:10px">Filtrar
+        ahora</button>
     </div>
     <div id="osm-map"></div>
 
@@ -2684,17 +2678,12 @@ create policy "open" on finanzas for all using (true) with check (true);`;
       const d = new Date();
       const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
       const curDayName = days[d.getDay()];
-      const zoneDayMap = { 1: 'Sur', 3: 'Norte', 0: 'Oeste' };
-      const suggestZone = zoneDayMap[d.getDay()];
-      
+
       const selDay = EL('map-filter-day');
-      const selZone = EL('map-filter-zone');
-      
       if (selDay) selDay.value = curDayName;
-      if (selZone && suggestZone) selZone.value = suggestZone;
-      
+
       refreshMarkers(); renderPDVListMap();
-      toast('✓ Filtros ajustados para ' + curDayName + (suggestZone ? ' (' + suggestZone + ')' : ''));
+      toast('✓ Filtros ajustados para ' + curDayName);
       EL('route-day-suggest').style.display = 'none';
     }
 
@@ -2716,14 +2705,11 @@ create policy "open" on finanzas for all using (true) with check (true);`;
         const d = new Date();
         const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
         const curDayName = days[d.getDay()];
-        const zoneDayMap = { 1: 'Sur', 3: 'Norte', 0: 'Oeste' };
-        const suggestZone = zoneDayMap[d.getDay()];
 
         const banner = EL('route-day-suggest');
         if (banner) {
           EL('suggest-day-text').textContent = 'Hoy es ' + curDayName;
-          const suggestText = suggestZone ? 'Ruta sugerida: ' + suggestZone : 'Ruta sugerida: ' + curDayName;
-          banner.querySelector('div:last-child div:last-child').innerHTML = suggestText;
+          banner.querySelector('div:last-child div:last-child').innerHTML = 'Ruta sugerida: ' + curDayName;
           banner.style.display = 'flex';
         }
         if (osmMap) { setTimeout(() => osmMap.invalidateSize(), 200); refreshMarkers(); renderPDVListMap(); }
@@ -3179,13 +3165,11 @@ create policy "open" on finanzas for all using (true) with check (true);`;
       const bounds = [];
       const filterVal = EL('map-filter-visited')?.value || 'all';
       const filterDay = EL('map-filter-day')?.value || 'all';
-      const filterZone = EL('map-filter-zone')?.value || 'all';
       const todayStr = new Date().toISOString().slice(0, 10);
       const ds = new Date(todayStr + 'T00:00:00').toDateString();
 
       cache.pdvs.forEach((pdv, idx) => {
         if (!pdv.lat || !pdv.lng) return;
-        if (filterZone !== 'all' && pdv.zona !== filterZone) return;
         if (filterDay !== 'all' && pdv.dia_visita !== filterDay) return;
 
         const lat = Number(pdv.lat), lng = Number(pdv.lng);
@@ -3233,7 +3217,6 @@ create policy "open" on finanzas for all using (true) with check (true);`;
 
       const filterVal = EL('map-filter-visited')?.value || 'all';
       const filterDay = EL('map-filter-day')?.value || 'all';
-      const filterZone = EL('map-filter-zone')?.value || 'all';
       const todayStr = new Date().toISOString().slice(0, 10);
       const ds = new Date(todayStr + 'T00:00:00').toDateString();
 
@@ -3242,7 +3225,6 @@ create policy "open" on finanzas for all using (true) with check (true);`;
         const visitedToday = cache.ventas.some(v => v.pdv_id === pdv.id && (new Date(v.created_at).toDateString() === ds || v.fecha_entrega === todayStr) && v.status === 'entregado');
         if (filterVal === 'visited' && !visitedToday) return;
         if (filterVal === 'unvisited' && visitedToday) return;
-        if (filterZone !== 'all' && pdv.zona !== filterZone) return;
         if (filterDay !== 'all' && pdv.dia_visita !== filterDay) return;
         pdvsToShow.push({ ...pdv, _visited: visitedToday, _original_idx: i });
       });
@@ -4485,10 +4467,9 @@ create policy "open" on finanzas for all using (true) with check (true);`;
     // ============================================================
     async function calcRoute() {
       if (!cache.pdvs.length) return toast('No hay PDV registrados', true);
-      
+
       const filterVal = EL('map-filter-visited')?.value || 'all';
       const filterDay = EL('map-filter-day')?.value || 'all';
-      const filterZone = EL('map-filter-zone')?.value || 'all';
       const todayStr = new Date().toISOString().slice(0, 10);
       const ds = new Date(todayStr + 'T00:00:00').toDateString();
 
@@ -4501,7 +4482,7 @@ create policy "open" on finanzas for all using (true) with check (true);`;
         if (filterVal === 'unvisited' && visitedToday) return false;
         return true;
       });
-      
+
       if (!pdvsConGPS.length) return toast('No hay PDV que coincidan con los filtros actuales', true);
       const doRoute = (startLat, startLng) => {
         let remaining = [...pdvsConGPS], sorted = [], clat = startLat, clng = startLng;
