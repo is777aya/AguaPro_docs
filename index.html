@@ -1729,6 +1729,13 @@
       <div class="live-coords" id="live-coords">Obteniendo posición...</div>
       <div class="live-acc" id="live-acc">Precisión: —</div>
       <div class="live-speed" id="live-speed"></div>
+      <!-- BOTON SEGUIR -->
+      <div style="position:absolute;bottom:10px;right:10px;display:flex;align-items:center;gap:6px">
+        <label style="font-size:10px;font-weight:800;color:var(--text3);text-transform:uppercase">Seguir</label>
+        <div id="live-follow-sw" onclick="toggleFollowMode()" style="width:34px;height:18px;border-radius:9px;background:var(--success);position:relative;cursor:pointer;transition:.3s">
+          <div style="width:14px;height:14px;border-radius:50%;background:#fff;position:absolute;top:2px;left:18px;transition:.2s"></div>
+        </div>
+      </div>
       <div id="live-compass"
         style="position:absolute;top:50%;right:10px;transform:translateY(-50%);width:40px;height:40px;border-radius:50%;background:rgba(0,180,255,.1);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;transition:transform 0.1s linear;font-size:20px;box-shadow:0 0 8px rgba(0,180,255,.4)">
         🧭</div>
@@ -2831,6 +2838,17 @@ create policy "open" on finanzas for all using (true) with check (true);`;
     let myLat = null;
     let myLng = null;
     let liveActive = false;
+    let followMode = true; // Auto-center by default
+
+    function toggleFollowMode() {
+      followMode = !followMode;
+      const sw = EL('live-follow-sw');
+      if (sw) {
+        sw.style.background = followMode ? 'var(--success)' : 'var(--text3)';
+        sw.querySelector('div').style.left = followMode ? '18px' : '2px';
+      }
+      toast(followMode ? '🧭 Seguimiento automático activado' : '📍 Seguimiento pausado (manual)');
+    }
 
     function toggleLiveTracking() {
       if (liveActive) stopLiveTracking();
@@ -2913,8 +2931,10 @@ create policy "open" on finanzas for all using (true) with check (true);`;
       if (liveCircle) liveCircle.setLatLng([myLat, myLng]).setRadius(acc);
       else liveCircle = L.circle([myLat, myLng], { radius: acc, color: '#00f593', fillColor: '#00f593', fillOpacity: .06, weight: 1 }).addTo(osmMap);
 
-      // Pan map smoothly
-      osmMap.panTo([myLat, myLng], { animate: true, duration: 0.5 });
+      // Center map if follow mode is active
+      if (followMode) {
+        osmMap.setView([myLat, myLng], osmMap.getZoom(), { animate: true, duration: 1 });
+      }
 
       // Refresh nav list if visible
       const navTab = EL('tm-nav');
