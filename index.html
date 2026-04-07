@@ -2173,24 +2173,18 @@
           id="pdv-capacidad" placeholder="100" min="1"></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div class="fg"><label class="flabel">Zona de Ruta</label>
-          <select class="finput" id="pdv-zona">
-            <option value="">-- Sin zona --</option>
-            <option>Sur</option>
-            <option>Norte</option>
-            <option>Oeste</option>
-            <option>Centro</option>
-            <option>Este</option>
-          </select>
+          <input type="text" class="finput" id="pdv-zona" list="pdv-zona-list" placeholder="Escribe o selecciona zona...">
+          <datalist id="pdv-zona-list"></datalist>
         </div>
         <div class="fg"><label class="flabel">Día de Visita</label>
           <select class="finput" id="pdv-dia">
             <option value="">-- Sin día --</option>
             <option>Lunes</option>
             <option>Martes</option>
-            <option>Miércoles</option>
+            <option>Miercoles</option>
             <option>Jueves</option>
             <option>Viernes</option>
-            <option>Sábado</option>
+            <option>Sabado</option>
             <option>Domingo</option>
           </select>
         </div>
@@ -2657,7 +2651,7 @@ create policy "open" on finanzas for all using (true) with check (true);`;
       if (SB && isOnline) { SB.from('route_history').select('*').order('id', { ascending: false }).limit(50).then(({ data }) => { if (data) cache.route_history = data; }); }
       const d = new Date(); EL('date-pill').textContent = d.toLocaleDateString('es-BO', { day: '2-digit', month: 'short' });
       EL('vd-fecha').value = d.toISOString().slice(0, 10); EL('p-hist-date').value = d.toISOString().slice(0, 10); EL('pv-fecha').value = d.toISOString().slice(0, 10); EL('f-fecha').value = d.toISOString().slice(0, 10); EL('fr-fecha').value = d.toISOString().slice(0, 10);
-      refreshProdLive(); buildQuickHours(); refreshPDVSelect(); renderPedidos('pendiente'); refreshStockTab(); initVentaDia(); renderStockAjustes(); renderPerdidasHist(); refreshFinanzas();
+      refreshProdLive(); buildQuickHours(); refreshPDVSelect(); renderPedidos('pendiente'); refreshStockTab(); initVentaDia(); renderStockAjustes(); renderPerdidasHist(); refreshFinanzas(); refreshZoneDatalist();
     }
 
     // ============================================================
@@ -2676,7 +2670,7 @@ create policy "open" on finanzas for all using (true) with check (true);`;
 
     function applySuggestedFilter() {
       const d = new Date();
-      const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+      const days = ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'];
       const curDayName = days[d.getDay()];
 
       const selDay = EL('map-filter-day');
@@ -2703,7 +2697,7 @@ create policy "open" on finanzas for all using (true) with check (true);`;
       // Mapa Sugestión
       if (id === 'screen-mapa') {
         const d = new Date();
-        const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+        const days = ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'];
         const curDayName = days[d.getDay()];
 
         const banner = EL('route-day-suggest');
@@ -2724,7 +2718,16 @@ create policy "open" on finanzas for all using (true) with check (true);`;
     function openModal(id) {
       EL(id).classList.add('open');
       document.body.style.overflow = 'hidden';
-      if (id === 'modal-pdv') setTimeout(initModalMap, 300);
+      if (id === 'modal-pdv') {
+        setTimeout(initModalMap, 300);
+        refreshZoneDatalist();
+      }
+    }
+
+    function refreshZoneDatalist() {
+      const list = EL('pdv-zona-list'); if (!list) return;
+      const zones = [...new Set(cache.pdvs.map(p => p.zona).filter(Boolean))].sort();
+      list.innerHTML = zones.map(z => `<option value="${z}">${z}</option>`).join('');
     }
     function closeModal(id) {
       EL(id).classList.remove('open');
