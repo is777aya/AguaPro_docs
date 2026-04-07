@@ -1729,7 +1729,7 @@
         <option value="unvisited">Por visitar</option>
         <option value="visited">Visitados</option>
       </select>
-      <select class="finput" id="map-filter-day" onchange="autoSelectZoneMap();refreshMarkers();renderPDVListMap()"
+      <select class="finput" id="map-filter-day" onchange="refreshMarkers();renderPDVListMap()"
         style="flex:1;padding:8px 12px;font-size:12px;height:34px">
         <option value="all">Dia: Todos</option>
         <option value="Lunes">Lunes</option>
@@ -1743,9 +1743,11 @@
       <select class="finput" id="map-filter-zone" onchange="refreshMarkers();renderPDVListMap()"
         style="flex:1;padding:8px 12px;font-size:12px;height:34px">
         <option value="all">Zona: Todas</option>
-        <option value="Armonia - Chasquipampa">Armonia - Chasquipampa</option>
+        <option value="Sur">Sur</option>
+        <option value="Norte">Norte</option>
+        <option value="Oeste">Oeste</option>
         <option value="Centro">Centro</option>
-        <option value="Obrajes - Calacoto - Ovejuyo">Obrajes - Calacoto - Ovejuyo</option>
+        <option value="Este">Este</option>
       </select>
     </div>
     <div id="route-day-suggest" style="background:rgba(0,180,255,.1);border:1px solid var(--border2);border-radius:var(--r2);padding:10px;margin-bottom:12px;display:none;align-items:center;gap:10px">
@@ -2179,13 +2181,15 @@
         <div class="fg"><label class="flabel">Zona de Ruta</label>
           <select class="finput" id="pdv-zona">
             <option value="">-- Sin zona --</option>
-            <option>Armonia - Chasquipampa</option>
+            <option>Sur</option>
+            <option>Norte</option>
+            <option>Oeste</option>
             <option>Centro</option>
-            <option>Obrajes - Calacoto - Ovejuyo</option>
+            <option>Este</option>
           </select>
         </div>
         <div class="fg"><label class="flabel">Día de Visita</label>
-          <select class="finput" id="pdv-dia" onchange="autoSelectZoneModal()">
+          <select class="finput" id="pdv-dia">
             <option value="">-- Sin día --</option>
             <option>Lunes</option>
             <option>Martes</option>
@@ -2680,12 +2684,7 @@ create policy "open" on finanzas for all using (true) with check (true);`;
       const d = new Date();
       const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
       const curDayName = days[d.getDay()];
-      // SUGGESTION MAP CUSTOMIZED:
-      const zoneDayMap = { 
-        1: 'Armonia - Chasquipampa', 
-        3: 'Centro', 
-        5: 'Obrajes - Calacoto - Ovejuyo' 
-      };
+      const zoneDayMap = { 1: 'Sur', 3: 'Norte', 0: 'Oeste' };
       const suggestZone = zoneDayMap[d.getDay()];
       
       const selDay = EL('map-filter-day');
@@ -2697,20 +2696,6 @@ create policy "open" on finanzas for all using (true) with check (true);`;
       refreshMarkers(); renderPDVListMap();
       toast('✓ Filtros ajustados para ' + curDayName + (suggestZone ? ' (' + suggestZone + ')' : ''));
       EL('route-day-suggest').style.display = 'none';
-    }
-
-    function autoSelectZoneMap() {
-      const day = EL('map-filter-day').value;
-      const zoneEl = EL('map-filter-zone');
-      const map = { 'Lunes': 'Armonia - Chasquipampa', 'Miércoles': 'Centro', 'Viernes': 'Obrajes - Calacoto - Ovejuyo' };
-      if (map[day]) zoneEl.value = map[day];
-    }
-
-    function autoSelectZoneModal() {
-      const day = EL('pdv-dia').value;
-      const zoneEl = EL('pdv-zona');
-      const map = { 'Lunes': 'Armonia - Chasquipampa', 'Miércoles': 'Centro', 'Viernes': 'Obrajes - Calacoto - Ovejuyo' };
-      if (map[day]) zoneEl.value = map[day];
     }
 
     function toast(msg, isErr = false) { const t = EL('toast'); EL('toast-msg').textContent = msg; t.className = 'toast ' + (isErr ? 'err' : 'ok') + ' show'; setTimeout(() => t.classList.remove('show'), 2800); }
