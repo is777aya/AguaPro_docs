@@ -2621,7 +2621,17 @@ create policy "open" on finanzas for all using (true) with check (true);`;
     function idbAll(s) { return new Promise((res, rej) => { if (!idb) return res([]); const r = idb.transaction(s, 'readonly').objectStore(s).getAll(); r.onsuccess = () => res(r.result || []); r.onerror = () => res([]); }); }
     function idbPut(s, rec) { return new Promise((res, rej) => { if (!idb) return res(); const r = idb.transaction(s, 'readwrite').objectStore(s).put(rec); r.onsuccess = () => res(r.result); r.onerror = () => res(); }); }
     function idbClear(s) { return new Promise((res, rej) => { if (!idb) return res(); const r = idb.transaction(s, 'readwrite').objectStore(s).clear(); r.onsuccess = () => res(); r.onerror = () => res(); }); }
-    async function idbSync(s, data) { await idbClear(s); for (const r of data) await idbPut(s, r); }
+    async function idbSync(s, data) {
+      if (!idb) return;
+      await idbClear(s);
+      return new Promise((res, rej) => {
+        const tx = idb.transaction(s, 'readwrite');
+        const store = tx.objectStore(s);
+        data.forEach(r => store.put(r));
+        tx.oncomplete = () => res();
+        tx.onerror = () => rej();
+      });
+    }
     async function loadIDB() { for (const s of STORES) cache[s] = await idbAll(s); }
 
     // ============================================================
@@ -2632,9 +2642,20 @@ create policy "open" on finanzas for all using (true) with check (true);`;
     async function connectSB(url, key) { showLoad('Conectando a Supabase...'); try { SB = window.supabase.createClient(url, key); const { error } = await SB.from('pdvs').select('id').limit(1); if (error) throw error; isOnline = true; dot('online'); await loadAll(); startApp(); toast('✓ Conectado a Supabase'); } catch (e) { hideLoad(); toast('Error: ' + (e.message || 'Sin conexión'), true); dot('error'); } }
     async function startOffline() { isOnline = false; dot('error'); showLoad('Cargando datos locales...'); await loadIDB(); startApp(); toast('Modo offline'); EL('offline-bar').classList.add('show'); }
     async function loadAll() {
-      showLoad('Sincronizando datos...'); for (const s of STORES) { const { data, error } = await SB.from(s).select('*').order('id', { ascending: true }); if (!error && data) { cache[s] = data; await idbSync(s, data); } }
-      // Load config
-      const { data: cfg } = await SB.from('config').select('*'); if (cfg) cfg.forEach(c => cache.config[c.key] = c.value);
+      showLoad('Sincronizando datos...');
+      try {
+        const promises = STORES.map(async s => {
+          const { data, error } = await SB.from(s).select('*').order('id', { ascending: true });
+          if (!error && data) {
+            cache[s] = data;
+            await idbSync(s, data);
+          }
+        });
+        const configPromise = SB.from('config').select('*').then(({ data }) => {
+          if (data) data.forEach(c => cache.config[c.key] = c.value);
+        });
+        await Promise.all([...promises, configPromise]);
+      } catch (e) { console.error('Load sync error:', e); }
       hideLoad();
     }
     async function dbInsert(table, record) { delete record.id; if (isOnline && SB) { dot('syncing'); const { data, error } = await SB.from(table).insert(record).select().single(); if (error) { dot('error'); toast('Error: ' + error.message, true); return null; } dot('online'); await idbPut(table, data); cache[table].push(data); return data; } else { const tmp = { ...record, id: Date.now() }; cache[table].push(tmp); await idbPut(table, tmp); return tmp; } }
