@@ -466,7 +466,6 @@ textarea.finput{resize:vertical;min-height:70px;line-height:1.5}
     <div class="live-coords" id="live-coords">Obteniendo posición...</div>
     <div class="live-acc" id="live-acc">Precisión: —</div>
     <div class="live-speed" id="live-speed"></div>
-    <div id="live-compass" style="position:absolute;top:50%;right:10px;transform:translateY(-50%);width:40px;height:40px;border-radius:50%;background:rgba(0,180,255,.1);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;transition:transform 0.1s linear;font-size:20px;box-shadow:0 0 8px rgba(0,180,255,.4)">🧭</div>
   </div>
 
   <div style="display:flex;gap:8px;margin-bottom:10px">
@@ -1243,12 +1242,7 @@ function toggleLiveTracking(){
   else           startLiveTracking();
 }
 
-function handleOrientation(e){
-  if(e.webkitCompassHeading) liveHeading = e.webkitCompassHeading;
-  else if(e.alpha !== null) liveHeading = 360 - e.alpha;
-  const compass = EL('live-compass');
-  if(compass && liveHeading !== null) compass.style.transform = `translateY(-50%) rotate(${liveHeading}deg)`;
-}
+function handleOrientation(e){ }
 
 function startLiveTracking(){
   if(!navigator.geolocation) return toast('GPS no disponible en este dispositivo', true);
@@ -1324,8 +1318,41 @@ function onLivePosition(pos){
     osmMap.setView([myLat, myLng], osmMap.getZoom(), { animate: true, duration: 0.8 });
   }
 
-  // Refresh PDV list to update context if needed (removed nav list but maybe list has distances)
-  // renderPDVListMap(); // Keep list static unless filtered
+  // ALERTA DE PDV CERCANO
+  checkProximityAlert(myLat, myLng);
+}
+
+let lastAlertedPDV = null;
+function checkProximityAlert(lat, lng){
+  if(!cache.pdvs.length) return;
+  const todayStr = new Date().toISOString().slice(0,10);
+  const ds = new Date(todayStr+'T00:00:00').toDateString();
+
+  let nearest = null;
+  let minD = Infinity;
+
+  cache.pdvs.forEach(p => {
+    if(!p.lat || !p.lng) return;
+    const d = haversineKm(lat, lng, Number(p.lat), Number(p.lng));
+    if(d < minD){
+      minD = d;
+      nearest = p;
+    }
+  });
+
+  // Si está a menos de 50 metros (0.05 km) y no ha sido alertado recientemente
+  if(nearest && minD < 0.05){
+    const alreadyVisited = cache.ventas.some(v => v.pdv_id === nearest.id && (new Date(v.created_at).toDateString()===ds || v.fecha_entrega===todayStr) && v.status==='entregado');
+    if(!alreadyVisited && lastAlertedPDV !== nearest.id){
+      lastAlertedPDV = nearest.id;
+      toast(`📍 PDV CERCANO: ${nearest.biz_name} (${Math.round(minD*1000)}m)`);
+      // Vibrate if supported
+      if(navigator.vibrate) navigator.vibrate([200, 100, 200]);
+    }
+  } else if (minD > 0.1) {
+    // Reset alert if moved away
+    lastAlertedPDV = null;
+  }
 }
 
 // Helpers
