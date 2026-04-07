@@ -2095,6 +2095,42 @@
         </div>
       </div>
 
+      <!-- DINERO EN MANO (FISICO) -->
+      <div class="card" style="background:linear-gradient(135deg,rgba(0,245,147,.05),rgba(6,214,245,.05));border:1.5px solid var(--success)">
+        <div class="card-title" style="color:var(--success);display:flex;align-items:center;gap:8px">
+          <span>💵 Dinero Estimado en Mano (Caja)</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2)">
+            <span>Ventas en Efectivo:</span>
+            <span id="f-cash-ventas" style="color:var(--text);font-weight:700">Bs.0.00</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2)">
+            <span>Ingresos Extra:</span>
+            <span id="f-cash-extra" style="color:var(--text);font-weight:700">Bs.0.00</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2)">
+            <span>(-) Gastos pagados:</span>
+            <span id="f-cash-gastos" style="color:var(--danger);font-weight:700">Bs.0.00</span>
+          </div>
+          <div style="margin-top:6px;padding-top:8px;border-top:1px dashed var(--border2);display:flex;justify-content:space-between;align-items:baseline">
+            <span style="font-size:14px;font-weight:800;color:var(--success)">EFECTIVO TOTAL:</span>
+            <span id="f-cash-total" style="font-size:24px;font-weight:800;font-family:var(--mono);color:var(--success)">Bs.0.00</span>
+          </div>
+          <div id="f-other-payments" style="font-size:10px;color:var(--text3);font-family:var(--mono);text-align:right;margin-top:4px">
+            QR: Bs.0 | Crédito: Bs.0
+          </div>
+        </div>
+      </div>
+
+      <!-- HISTORIAL DIARIO -->
+      <div class="card">
+        <div class="card-title">🗓 Historial Ganancias por Fecha</div>
+        <div id="f-historial-fechas" style="display:flex;flex-direction:column;gap:10px">
+          <div style="text-align:center;padding:12px;color:var(--text3);font-size:12px">Calculando...</div>
+        </div>
+      </div>
+
       <!-- CUADRE FISICO -->
       <div class="card">
         <div class="card-title">📦 Cuadre de Unidades Físicas (Día)</div>
@@ -3747,7 +3783,13 @@ create policy "open" on finanzas for all using (true) with check (true);`;
       const tEl = EL('vcard-total-' + pdvId); if (tEl) tEl.textContent = fmtBs(val * precio);
       // Bonus badge on card
       const boniEl = EL('vcard-boni-' + pdvId);
-      if (boniEl) { boniEl.style.display = boni > 0 ? 'flex' : 'none'; const sp = boniEl.querySelector('span:last-child'); if (sp) sp.textContent = boni + ' bonif. · ' + fmtBs(costoBoni); }
+      if (boniEl) { 
+        boniEl.style.display = boni > 0 ? 'flex' : 'none'; 
+        const pb = ventaSession[pdvId].precio_boni || parseFloat(EL('vd-precio-boni')?.value) || precio;
+        const costoBoni = boni * pb;
+        const sp = boniEl.querySelector('span:last-child'); 
+        if (sp) sp.textContent = boni + ' bonif. · ' + fmtBs(costoBoni); 
+      }
       // Save button
       const btn = EL('vcard-btn-' + pdvId);
       if (btn) {
@@ -4686,6 +4728,22 @@ create policy "open" on finanzas for all using (true) with check (true);`;
         bdEl.style.color = balanceDia < 0 ? 'var(--danger)' : (balanceDia > 0 ? 'var(--success)' : 'var(--text)');
       }
 
+      // Dinero en Mano (Caja Fisica)
+      const vEfectivo = ventasDelDiaCache.filter(v => v.pago === 'efectivo').reduce((a, v) => a + Number(v.total || 0), 0);
+      const vQR = ventasDelDiaCache.filter(v => v.pago === 'qr').reduce((a, v) => a + Number(v.total || 0), 0);
+      const vCredito = ventasDelDiaCache.filter(v => v.pago === 'credito').reduce((a, v) => a + Number(v.total || 0), 0);
+      
+      const efectivoTotal = (vEfectivo + ingresoExtraHoy) - gastoHoy;
+      
+      set('f-cash-ventas', fmtBs(vEfectivo));
+      set('f-cash-extra', fmtBs(ingresoExtraHoy));
+      set('f-cash-gastos', fmtBs(gastoHoy));
+      set('f-cash-total', fmtBs(efectivoTotal));
+      set('f-other-payments', `QR: Bs.${vQR.toFixed(2)} | Crédito: Bs.${vCredito.toFixed(2)}`);
+
+      // Historial por Fechas (Últimos 10 días)
+      renderFinanzasHistory();
+
       // Cuadre Físico Día
       const prodHoyFis = cache.produccion.filter(p => new Date(p.created_at).toDateString() === ds).reduce((a, p) => a + p.qty, 0);
       const perdHoyFis = cache.perdidas.filter(p => new Date(p.created_at).toDateString() === ds).reduce((a, p) => a + p.qty, 0);
@@ -4722,6 +4780,43 @@ create policy "open" on finanzas for all using (true) with check (true);`;
       </div>`;
         }).join('') + '</div>';
       }
+    }
+
+    function renderFinanzasHistory() {
+      const el = EL('f-historial-fechas'); if (!el) return;
+      // Get unique dates from both ventas and finanzas
+      const dates = [...new Set([
+        ...cache.ventas.map(v => v.fecha_entrega || v.created_at.slice(0, 10)),
+        ...cache.finanzas.map(f => f.fecha || f.created_at.slice(0, 10))
+      ])].sort().reverse().slice(0, 10);
+
+      if (!dates.length) { el.innerHTML = '<div style="text-align:center;padding:12px;color:var(--text3);font-size:12px">Sin datos de ventas previos</div>'; return; }
+
+      el.innerHTML = dates.map(d => {
+        const ds = new Date(d + 'T00:00:00').toDateString();
+        const vD = cache.ventas.filter(v => (new Date(v.created_at).toDateString() === ds || v.fecha_entrega === d) && v.status === 'entregado');
+        const fD = cache.finanzas.filter(f => f.fecha === d || new Date(f.created_at).toDateString() === ds);
+        
+        const totV = vD.reduce((a, v) => a + Number(v.total || 0), 0);
+        const totB = vD.reduce((a, v) => a + Number(v.total_boni || 0), 0);
+        const totIE = fD.filter(f => f.tipo === 'ingreso_extra').reduce((a, f) => a + Number(f.monto), 0);
+        const totG = fD.filter(f => f.tipo === 'gasto').reduce((a, f) => a + Number(f.monto), 0);
+        const net = (totV + totIE) - (totB + totG);
+        
+        // Formatear fecha para mostrar
+        const fLabel = locDate(d + 'T00:00:00').split(',')[0]; 
+        
+        return `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);padding:10px;display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-size:12px;font-weight:800;color:var(--accent)">${fLabel}</div>
+            <div style="font-size:10px;color:var(--text3);font-family:var(--mono)">Ventas: ${fmtBs(totV)} | Gastos: ${fmtBs(totG)}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:14px;font-weight:800;font-family:var(--mono);color:${net < 0 ? 'var(--danger)' : 'var(--success)'}">${fmtBs(net)}</div>
+            <div style="font-size:9px;color:var(--text3);text-transform:uppercase">Utilidad neta</div>
+          </div>
+        </div>`;
+      }).join('');
     }
 
     // ============================================================
