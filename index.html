@@ -1729,15 +1729,15 @@
         <option value="unvisited">Por visitar</option>
         <option value="visited">Visitados</option>
       </select>
-      <select class="finput" id="map-filter-day" onchange="refreshMarkers();renderPDVListMap()"
+      <select class="finput" id="map-filter-day" onchange="autoSelectZoneMap();refreshMarkers();renderPDVListMap()"
         style="flex:1;padding:8px 12px;font-size:12px;height:34px">
-        <option value="all">Día: Todos</option>
+        <option value="all">Dia: Todos</option>
         <option value="Lunes">Lunes</option>
         <option value="Martes">Martes</option>
-        <option value="Miércoles">Miércoles</option>
+        <option value="Miercoles">Miercoles</option>
         <option value="Jueves">Jueves</option>
         <option value="Viernes">Viernes</option>
-        <option value="Sábado">Sábado</option>
+        <option value="Sabado">Sabado</option>
         <option value="Domingo">Domingo</option>
       </select>
       <select class="finput" id="map-filter-zone" onchange="refreshMarkers();renderPDVListMap()"
@@ -2185,7 +2185,7 @@
           </select>
         </div>
         <div class="fg"><label class="flabel">Día de Visita</label>
-          <select class="finput" id="pdv-dia">
+          <select class="finput" id="pdv-dia" onchange="autoSelectZoneModal()">
             <option value="">-- Sin día --</option>
             <option>Lunes</option>
             <option>Martes</option>
@@ -2678,7 +2678,7 @@ create policy "open" on finanzas for all using (true) with check (true);`;
 
     function applySuggestedFilter() {
       const d = new Date();
-      const days = ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'];
+      const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
       const curDayName = days[d.getDay()];
       // SUGGESTION MAP CUSTOMIZED:
       const zoneDayMap = { 
@@ -2697,6 +2697,20 @@ create policy "open" on finanzas for all using (true) with check (true);`;
       refreshMarkers(); renderPDVListMap();
       toast('✓ Filtros ajustados para ' + curDayName + (suggestZone ? ' (' + suggestZone + ')' : ''));
       EL('route-day-suggest').style.display = 'none';
+    }
+
+    function autoSelectZoneMap() {
+      const day = EL('map-filter-day').value;
+      const zoneEl = EL('map-filter-zone');
+      const map = { 'Lunes': 'Armonia - Chasquipampa', 'Miércoles': 'Centro', 'Viernes': 'Obrajes - Calacoto - Ovejuyo' };
+      if (map[day]) zoneEl.value = map[day];
+    }
+
+    function autoSelectZoneModal() {
+      const day = EL('pdv-dia').value;
+      const zoneEl = EL('pdv-zona');
+      const map = { 'Lunes': 'Armonia - Chasquipampa', 'Miércoles': 'Centro', 'Viernes': 'Obrajes - Calacoto - Ovejuyo' };
+      if (map[day]) zoneEl.value = map[day];
     }
 
     function toast(msg, isErr = false) { const t = EL('toast'); EL('toast-msg').textContent = msg; t.className = 'toast ' + (isErr ? 'err' : 'ok') + ' show'; setTimeout(() => t.classList.remove('show'), 2800); }
