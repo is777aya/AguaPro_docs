@@ -1741,61 +1741,15 @@
         <option value="Domingo">Domingo</option>
       </select>
     </div>
-    <div id="route-day-suggest"
-      style="background:rgba(0,180,255,.1);border:1px solid var(--border2);border-radius:var(--r2);padding:10px;margin-bottom:12px;display:none;align-items:center;gap:10px">
-      <span style="font-size:18px">📌</span>
-      <div style="flex:1">
-        <div style="font-size:12px;font-weight:800;color:var(--accent)" id="suggest-day-text">Hoy es Lunes</div>
-        <div style="font-size:11px;color:var(--text2)">Ruta sugerida: <span
-            style="font-weight:700;color:var(--water)">Zona Sur</span></div>
-      </div>
-      <button class="btn btn-sm btn-ghost" onclick="applySuggestedFilter()" style="font-size:10px">Filtrar
-        ahora</button>
-    </div>
+
     <div id="osm-map"></div>
 
-    <!-- TABS -->
-    <div class="tabs" style="margin-top:12px">
-      <div class="tab active" onclick="switchTab(this,'tm-ruta')">Ruta del día</div>
-      <div class="tab" onclick="switchTab(this,'tm-nav');renderNavList()">Navegación</div>
-      <div class="tab" onclick="switchTab(this,'tm-historial');renderRouteHistory()">Historial</div>
-    </div>
-    <div id="tm-ruta">
-      <div class="card" id="route-card">
-        <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
-          <span>🗺 Ruta óptima del día</span>
-          <button class="btn btn-sm btn-ghost" onclick="calcRoute()">Calcular y guardar</button>
-        </div>
-        <div id="route-list">
-          <div style="font-size:12px;color:var(--text3);padding:8px 0">Presiona Calcular para ordenar los PDV por
-            proximidad</div>
-        </div>
-      </div>
+    <!-- PDV LIST -->
+    <div style="margin-top:12px">
       <button class="btn btn-water btn-full" style="margin-bottom:12px" onclick="openModal('modal-pdv')">+ Registrar
         nuevo PDV</button>
       <div id="pdv-list-map">
         <div style="text-align:center;padding:24px;color:var(--text3);font-size:13px">Sin puntos registrados</div>
-      </div>
-    </div>
-    <!-- TAB NAVEGACIÓN -->
-    <div id="tm-nav" style="display:none">
-      <div
-        style="font-size:11px;color:var(--text2);font-family:var(--mono);margin-bottom:10px;padding:8px 10px;background:var(--bg3);border-radius:var(--r2)">
-        PDVs ordenados por distancia desde tu posición actual. Activa el seguimiento para actualizar en tiempo real.
-      </div>
-      <div id="nav-list">
-        <div style="text-align:center;padding:24px;color:var(--text3);font-size:13px">Activa el seguimiento para ver
-          distancias</div>
-      </div>
-    </div>
-
-    <div id="tm-historial" style="display:none">
-      <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center">
-        <input type="date" class="finput" id="rh-fecha" style="flex:1">
-        <button class="btn btn-sm btn-ghost" onclick="renderRouteHistory()">Ver</button>
-      </div>
-      <div id="route-history-list">
-        <div style="text-align:center;padding:28px;color:var(--text3);font-size:13px">Sin rutas guardadas</div>
       </div>
     </div>
 
@@ -2071,15 +2025,18 @@
           <span style="font-size:12px;color:var(--text2)">- Gastos / Egresos</span>
           <span style="font-size:13px;font-weight:700;color:var(--danger)" id="f-dia-gasto">Bs.0.00</span>
         </div>
-        <div style="display:flex;justify-content:space-between;padding:8px 0;margin-top:4px;border-top:2px solid var(--border)">
+        <div
+          style="display:flex;justify-content:space-between;padding:8px 0;margin-top:4px;border-top:2px solid var(--border)">
           <span style="font-size:13px;font-weight:800;color:var(--text)">Utilidad Real del Día</span>
           <span style="font-size:16px;font-weight:800;font-family:var(--mono)" id="f-dia-balance">Bs.0.00</span>
         </div>
-        <div style="font-size:9px;color:var(--text3);text-align:right;margin-top:-6px;margin-bottom:10px">(Incluye costo de bonificaciones)</div>
+        <div style="font-size:9px;color:var(--text3);text-align:right;margin-top:-6px;margin-bottom:10px">(Incluye costo
+          de bonificaciones)</div>
       </div>
 
       <!-- DINERO EN MANO (CAJA) -->
-      <div class="card" style="background:linear-gradient(135deg,rgba(0,245,147,.1),rgba(6,214,245,.1));border:2px solid var(--success)">
+      <div class="card"
+        style="background:linear-gradient(135deg,rgba(0,245,147,.1),rgba(6,214,245,.1));border:2px solid var(--success)">
         <div class="card-title" style="color:var(--success);display:flex;align-items:center;gap:8px">
           <span>💵 Dinero Físico en Mano (Caja)</span>
         </div>
@@ -2096,11 +2053,14 @@
             <span style="color:var(--text2)">- Gastos pagados:</span>
             <span id="f-cash-gastos" style="color:var(--danger);font-weight:700">Bs.0.00</span>
           </div>
-          <div style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--border2);display:flex;justify-content:space-between;align-items:center">
+          <div
+            style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--border2);display:flex;justify-content:space-between;align-items:center">
             <span style="font-size:14px;font-weight:800;color:var(--success)">EFECTIVO EN CAJA:</span>
             <div style="text-align:right">
-              <span id="f-cash-total" style="font-size:24px;font-weight:900;font-family:var(--mono);color:var(--success)">Bs.0.00</span>
-              <div id="f-other-payments" style="font-size:9px;color:var(--text3);margin-top:2px">QR: Bs.0 | Crédito: Bs.0</div>
+              <span id="f-cash-total"
+                style="font-size:24px;font-weight:900;font-family:var(--mono);color:var(--success)">Bs.0.00</span>
+              <div id="f-other-payments" style="font-size:9px;color:var(--text3);margin-top:2px">QR: Bs.0 | Crédito:
+                Bs.0</div>
             </div>
           </div>
         </div>
@@ -2681,15 +2641,15 @@ create policy "open" on finanzas for all using (true) with check (true);`;
     // ============================================================
     async function initSupabase() { const url = V('cfg-url').trim(), key = V('cfg-key').trim(); if (!url || !key) return toast('Completa URL y Key', true); LS('sb_url', url); LS('sb_key', key); await connectSB(url, key); }
     async function reconnectSB() { const url = V('cfg-url2').trim() || LS('sb_url'), key = V('cfg-key2').trim() || LS('sb_key'); if (!url || !key) return toast('Faltan credenciales', true); LS('sb_url', url); LS('sb_key', key); closeModal('modal-config'); await connectSB(url, key); }
-    async function connectSB(url, key) { 
-      showLoad('Iniciando...'); 
-      try { 
-        SB = window.supabase.createClient(url, key); 
-        isOnline = true; 
-        dot('online'); 
+    async function connectSB(url, key) {
+      showLoad('Iniciando...');
+      try {
+        SB = window.supabase.createClient(url, key);
+        isOnline = true;
+        dot('online');
         await loadIDB(); startApp(); hideLoad();
         loadAll().then(() => toast('✓ Sincronizado'));
-      } catch (e) { hideLoad(); toast('Error: ' + e.message, true); startOffline(); } 
+      } catch (e) { hideLoad(); toast('Error: ' + e.message, true); startOffline(); }
     }
     async function startOffline() { isOnline = false; dot('error'); showLoad('Cargando datos locales...'); await loadIDB(); startApp(); toast('Modo offline'); EL('offline-bar').classList.add('show'); }
     async function loadAll() {
