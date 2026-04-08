@@ -4623,89 +4623,134 @@ create policy "open" on finanzas for all using (true) with check (true);`;
       const dt = V('f-fecha'); if (!dt) return;
       const ds = new Date(dt + 'T00:00:00').toDateString();
 
-      // Costos / Ingresos globales calculados siempre exactos desde cache local
-      const ventasRealGlobal = cache.ventas.filter(v => v.status === 'entregado').reduce((a, v) => a + Number(v.total || 0), 0);
-      const boniCostoGlobal = cache.ventas.filter(v => v.status === 'entregado').reduce((a, v) => a + Number(v.total_boni || 0), 0);
-      const extrasAcum = cache.finanzas.filter(f => f.tipo === 'ingreso_extra').reduce((a, f) => a + Number(f.monto), 0);
-      const gastosAcum = cache.finanzas.filter(f => f.tipo === 'gasto').reduce((a, f) => a + Number(f.monto), 0);
+      // ============================================
+      // 1. O(N) BARRIDO UNIFICADO DE VENTAS
+      // ============================================
+      let ventasRealGlobal = 0, boniCostoGlobal = 0;
+      let ventasHoyInfo = 0, boniCostoHoy = 0, ventasHoyFis = 0, boniHoyFis = 0;
+      let vEfe = 0, vQR = 0, vCre = 0;
 
+      for (let i = 0; i < cache.ventas.length; i++) {
+        const v = cache.ventas[i];
+        if (v.status !== 'entregado') continue;
+        
+        const tot = Number(v.total || 0);
+        const tBoni = Number(v.total_boni || 0);
+        const qty = v.qty || 0;
+        const boni = v.bonificacion || 0;
+
+        ventasRealGlobal += tot;
+        boniCostoGlobal += tBoni;
+
+        const isHoy = (v.fecha_entrega === dt || new Date(v.created_at).toDateString() === ds);
+        if (isHoy) {
+          ventasHoyInfo += tot;
+          boniCostoHoy += tBoni;
+          ventasHoyFis += qty;
+          boniHoyFis += boni;
+
+          if (v.pago === 'qr') vQR += tot;
+          else if (v.pago === 'credito') vCre += tot;
+          else vEfe += tot; // Efectivo es por defecto
+        }
+      }
+
+      // ============================================
+      // 2. O(N) BARRIDO UNIFICADO DE FINANZAS
+      // ============================================
+      let extrasAcum = 0, gastosAcum = 0;
+      let ingresoExtraHoy = 0, gastoHoy = 0;
+      const finHoy = [];
+
+      for (let i = 0; i < cache.finanzas.length; i++) {
+        const f = cache.finanzas[i];
+        const monto = Number(f.monto || 0);
+        const isGasto = f.tipo === 'gasto';
+        const isExtra = f.tipo === 'ingreso_extra';
+        const isHoy = (f.fecha === dt || new Date(f.created_at).toDateString() === ds);
+
+        if (isGasto) gastosAcum += monto;
+        else if (isExtra) extrasAcum += monto;
+
+        if (isHoy) {
+          finHoy.push(f);
+          if (isGasto) gastoHoy += monto;
+          else if (isExtra) ingresoExtraHoy += monto;
+        }
+      }
+
+      // ============================================
+      // 3. O(N) PRODUCCIÓN Y PÉRDIDAS DEL DÍA
+      // ============================================
+      let prodHoyFis = 0, perdHoyFis = 0;
+      for (let i = 0; i < cache.produccion.length; i++) {
+        if (new Date(cache.produccion[i].created_at).toDateString() === ds) {
+          prodHoyFis += cache.produccion[i].qty;
+        }
+      }
+      for (let i = 0; i < cache.perdidas.length; i++) {
+        if (new Date(cache.perdidas[i].created_at).toDateString() === ds) {
+          perdHoyFis += cache.perdidas[i].qty;
+        }
+      }
+
+      // ============================================
+      // OPERACIONES Y UI UPDATE (Sincrónico)
+      // ============================================
+      const setUI = (id, v) => { const e = EL(id); if (e) e.textContent = v; };
+
+      // GLOBAL
       const ingresoTotalGlobal = ventasRealGlobal + extrasAcum;
       const egresoTotalGlobal = gastosAcum + boniCostoGlobal;
       const balanceGlobal = ingresoTotalGlobal - egresoTotalGlobal;
-
-      const set = (id, v) => { const e = EL(id); if (e) e.textContent = v; };
-      set('f-ingreso-total', fmtBs(ingresoTotalGlobal));
-      set('f-egreso-total', fmtBs(egresoTotalGlobal));
-
+      
+      setUI('f-ingreso-total', fmtBs(ingresoTotalGlobal));
+      setUI('f-egreso-total', fmtBs(egresoTotalGlobal));
       const bEl = EL('f-balance-total');
       if (bEl) {
         bEl.textContent = fmtBs(balanceGlobal);
         bEl.style.color = balanceGlobal < 0 ? 'var(--danger)' : 'var(--warn)';
       }
 
-      // Resumen del día
-      const ventasDelDiaCache = cache.ventas.filter(v => {
-        const byC = new Date(v.created_at).toDateString() === ds;
-        const byF = v.fecha_entrega === dt;
-        return (byC || byF) && v.status === 'entregado';
-      });
-      const ventasHoyInfo = ventasDelDiaCache.reduce((a, v) => a + Number(v.total || 0), 0);
-      const boniCostoHoy = ventasDelDiaCache.reduce((a, v) => a + Number(v.total_boni || 0), 0);
-
-      const finHoy = cache.finanzas.filter(f => f.fecha === dt || new Date(f.created_at).toDateString() === ds);
-      const ingresoExtraHoy = finHoy.filter(f => f.tipo === 'ingreso_extra').reduce((a, f) => a + Number(f.monto), 0);
-      const gastoHoy = finHoy.filter(f => f.tipo === 'gasto').reduce((a, f) => a + Number(f.monto), 0);
-
+      // RESUMEN DÍA
       const balanceDia = (ventasHoyInfo + ingresoExtraHoy) - (gastoHoy + boniCostoHoy);
-
-      const fSet = (id, v) => { const e = EL(id); if (e) e.textContent = v; };
-      fSet('f-dia-ventas', fmtBs(ventasHoyInfo));
-      fSet('f-dia-ingreso', fmtBs(ingresoExtraHoy));
-      fSet('f-dia-boni', fmtBs(boniCostoHoy));
-      fSet('f-dia-gasto', fmtBs(gastoHoy));
-
+      setUI('f-dia-ventas', fmtBs(ventasHoyInfo));
+      setUI('f-dia-ingreso', fmtBs(ingresoExtraHoy));
+      setUI('f-dia-boni', fmtBs(boniCostoHoy));
+      setUI('f-dia-gasto', fmtBs(gastoHoy));
       const bdEl = EL('f-dia-balance');
       if (bdEl) {
         bdEl.textContent = fmtBs(balanceDia);
         bdEl.style.color = balanceDia < 0 ? 'var(--danger)' : (balanceDia > 0 ? 'var(--success)' : 'var(--text)');
       }
 
-      // Dinero Físico (Solo Efectivo)
-      const vEfe = ventasDelDiaCache.filter(v => v.pago === 'efectivo' || !v.pago).reduce((a, v) => a + Number(v.total || 0), 0);
-      const vQR = ventasDelDiaCache.filter(v => v.pago === 'qr').reduce((a, v) => a + Number(v.total || 0), 0);
-      const vCre = ventasDelDiaCache.filter(v => v.pago === 'credito').reduce((a, v) => a + Number(v.total || 0), 0);
+      // DINERO FÍSICO
       const cashTotal = (vEfe + ingresoExtraHoy) - gastoHoy;
-
-      fSet('f-cash-ventas', fmtBs(vEfe));
-      fSet('f-cash-extra', fmtBs(ingresoExtraHoy));
-      fSet('f-cash-gastos', fmtBs(gastoHoy));
-      fSet('f-cash-total', fmtBs(cashTotal));
+      setUI('f-cash-ventas', fmtBs(vEfe));
+      setUI('f-cash-extra', fmtBs(ingresoExtraHoy));
+      setUI('f-cash-gastos', fmtBs(gastoHoy));
+      setUI('f-cash-total', fmtBs(cashTotal));
       const payEl = EL('f-other-payments');
       if (payEl) payEl.textContent = `QR: Bs.${vQR.toFixed(2)} | Crédito: Bs.${vCre.toFixed(2)}`;
 
-      // Cuadre Físico Día
-      const prodHoyFis = cache.produccion.filter(p => new Date(p.created_at).toDateString() === ds).reduce((a, p) => a + p.qty, 0);
-      const perdHoyFis = cache.perdidas.filter(p => new Date(p.created_at).toDateString() === ds).reduce((a, p) => a + p.qty, 0);
-      const ventasHoyFis = ventasDelDiaCache.reduce((a, v) => a + v.qty, 0);
-      const boniHoyFis = ventasDelDiaCache.reduce((a, v) => a + (v.bonificacion || 0), 0);
+      // CUADRE FÍSICO (SACHETS)
       const balanceFis = prodHoyFis - ventasHoyFis - boniHoyFis - perdHoyFis;
-
-      set('f-dia-prod-fis', fmtNum(prodHoyFis) + ' sachet');
-      set('f-dia-ventas-fis', fmtNum(ventasHoyFis) + ' sachet');
-      set('f-dia-boni-fis', fmtNum(boniHoyFis) + ' sachet');
-      set('f-dia-perd-fis', fmtNum(perdHoyFis) + ' sachet');
-
+      setUI('f-dia-prod-fis', fmtNum(prodHoyFis) + ' sachet');
+      setUI('f-dia-ventas-fis', fmtNum(ventasHoyFis) + ' sachet');
+      setUI('f-dia-boni-fis', fmtNum(boniHoyFis) + ' sachet');
+      setUI('f-dia-perd-fis', fmtNum(perdHoyFis) + ' sachet');
       const bFisEl = EL('f-dia-balance-fis');
       if (bFisEl) {
         bFisEl.textContent = (balanceFis > 0 ? '+' : '') + fmtNum(balanceFis) + ' sachet';
         bFisEl.style.color = balanceFis < 0 ? 'var(--danger)' : (balanceFis > 0 ? 'var(--success)' : 'var(--text)');
       }
 
+      // LISTA MOVIMIENTOS EXTRA
       const flist = EL('f-list');
       if (!finHoy.length) {
         flist.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text3);font-size:13px">Sin movimientos extra para esta fecha</div>';
       } else {
-        flist.innerHTML = '<div class="card">' + [...finHoy].reverse().map(f => {
+        flist.innerHTML = '<div class="card">' + finHoy.reverse().map(f => {
           const isG = f.tipo === 'gasto';
           return `<div class="li">
         <div class="li-avatar" style="background:${isG ? 'rgba(255,69,96,.1)' : 'rgba(0,245,147,.1)'};color:${isG ? 'var(--danger)' : 'var(--success)'}">${isG ? '📉' : '📈'}</div>
