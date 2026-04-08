@@ -2454,6 +2454,49 @@
     </div>
   </div>
 
+  </div>
+
+  <!-- ===== PANTALLA PREVENTA (WhatsApp) ===== -->
+  <div class="screen" id="screen-preventa">
+    <div class="sec-header">
+      <div class="sec-title">Campañas Preventa</div>
+      <div class="sec-sub">WhatsApp a clientes por zona/día</div>
+    </div>
+    
+    <div class="card">
+      <div class="card-title">Configuración de Envío</div>
+      <div class="fg">
+        <label class="flabel">Filtrar por Día Asignado</label>
+        <select class="finput" id="prev-dia" onchange="renderPreventaList()">
+          <option value="Mañana">Por defecto (Mañana asume filtro manual local)</option>
+          <option value="Lunes">Lunes</option>
+          <option value="Martes">Martes</option>
+          <option value="Miercoles">Miércoles</option>
+          <option value="Jueves">Jueves</option>
+          <option value="Viernes">Viernes</option>
+          <option value="Sabado">Sábado</option>
+          <option value="Domingo">Domingo</option>
+          <option value="all" selected>Todos los días</option>
+        </select>
+      </div>
+      
+      <div class="fg" style="margin-bottom:0">
+        <label class="flabel">Mensaje (Plantilla)</label>
+        <textarea id="prev-msg" class="finput" rows="3" style="font-size:12px">Hola {negocio} 👋 Somos de SOMOS AGUA 💧. Pasaremos por su área pronto, ¿desea reservar algunos sachets para asegurar su stock?</textarea>
+        <div style="font-size:10px;color:var(--warn);margin-top:5px;font-family:var(--mono)">💡 Nota: {negocio} se reemplazará por el nombre de la tienda.</div>
+      </div>
+    </div>
+    
+    <div style="display:flex;align-items:center;justify-content:space-between;margin:15px 0 10px">
+      <div class="card-title" style="margin:0">Clientes disponibles</div>
+      <span class="badge b-cyan" id="prev-count">0</span>
+    </div>
+    
+    <div id="prev-list">
+      <!-- Se llena por JS -->
+    </div>
+  </div>
+
   <!-- NAV -->
   <nav class="nav" id="main-nav" style="display:none">
     <button class="nav-btn active" onclick="goScreen('screen-prod',0)">
@@ -2483,6 +2526,11 @@
       <div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
         </svg></div>Finanzas
+    </button>
+    <button class="nav-btn" onclick="goScreen('screen-preventa',5);renderPreventaList()">
+      <div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+        </svg></div>Mensajes
     </button>
   </nav>
   <script>
@@ -4723,6 +4771,72 @@ create policy "open" on finanzas for all using (true) with check (true);`;
         </div>
       </div>`;
         }).join('') + '</div>';
+      }
+    }
+
+    // ============================================================
+    // PREVENTA WHATSAPP
+    // ============================================================
+    function renderPreventaList() {
+      const el = EL('prev-list'); if (!el) return;
+      const countEl = EL('prev-count');
+      const diaFilter = V('prev-dia');
+      
+      // Filtrar clientes que tengan algun tipo de telefono
+      let clientes = cache.pdvs.filter(p => p.tel && p.tel.trim() !== '');
+      
+      // Filtro de dia
+      if (diaFilter !== 'all') {
+        clientes = clientes.filter(p => p.dia_visita === diaFilter);
+      }
+      
+      if (countEl) countEl.textContent = clientes.length;
+
+      if (!clientes.length) {
+        el.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text3);font-size:13px">No se encontraron PDVs con número de celular registrado para estos filtros. <br><br>💡 (Asegúrate de editar los clientes y añadir teléfono)</div>';
+        return;
+      }
+      
+      el.innerHTML = clientes.map(c => `
+      <div class="card" style="margin-bottom:10px;display:flex;align-items:center;gap:12px" id="prev-card-${c.id}">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:800;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.biz_name}</div>
+          <div style="font-size:11px;color:var(--text2);font-family:var(--mono);margin-top:2px">👤 ${c.owner_name}</div>
+          <div style="display:flex;gap:6px;margin-top:5px">
+            <span class="badge b-cyan" style="font-size:9px">${c.dia_visita || 'Sin Día'}</span>
+            <span style="font-size:11px;color:var(--text3);font-family:var(--mono)">📞 ${c.tel}</span>
+          </div>
+        </div>
+        <button id="btn-wa-${c.id}" class="btn btn-sm" style="background:linear-gradient(135deg,#25D366,#128C7E);color:#fff;font-weight:800;border:none;box-shadow:0 4px 10px rgba(37,211,102,.3);transition:.2s" onclick="enviarMensajePreventa(${c.id}, '${c.tel}')">
+           💬 Enviar Msg
+        </button>
+      </div>`).join('');
+    }
+
+    function enviarMensajePreventa(id, phone) {
+      if (!phone || phone.length < 6) return toast('Número de teléfono inválido', true);
+      const plantillaBase = V('prev-msg') || 'Hola {negocio}!';
+      const pdv = cache.pdvs.find(p => p.id === id);
+      const nombreNegocio = pdv ? pdv.biz_name : 'Cliente';
+      
+      const mensajeFinal = plantillaBase.replace(/{negocio}/g, nombreNegocio);
+      const encodedMsg = encodeURIComponent(mensajeFinal);
+      
+      // Limpiar numero de espacios
+      let num = phone.replace(/[^0-9]/g, '');
+      // Asumimos Bolivia (591) si no tiene codigo de pais, ajuste facil.
+      if (num.length === 8) num = '591' + num;
+      
+      const url = `https://wa.me/${num}?text=${encodedMsg}`;
+      window.open(url, '_blank');
+      
+      // Efecto visual de "Enviado" en la App
+      const btn = EL('btn-wa-' + id);
+      if (btn) {
+        btn.style.background = 'var(--bg3)';
+        btn.style.color = 'var(--text3)';
+        btn.style.boxShadow = 'none';
+        btn.innerHTML = '✓ Enviado';
       }
     }
 
