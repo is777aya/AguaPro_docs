@@ -1761,11 +1761,7 @@
       <div class="sec-title">Ventas</div>
       <div class="sec-sub">Diarias por punto de venta</div>
     </div>
-    <div class="tabs">
-      <div class="tab active" onclick="switchTab(this,'tv-diaria')">Ventas del Día</div>
-      <div class="tab" onclick="switchTab(this,'tv-preventa')">Pre-ventas</div>
-      <div class="tab" onclick="switchTab(this,'tv-pedidos')">Pedidos</div>
-    </div>
+
 
     <!-- TAB VENTAS DEL DÍA POR PDV -->
     <div id="tv-diaria">
@@ -1866,48 +1862,7 @@
       </div>
     </div>
 
-    <!-- TAB PRE-VENTA -->
-    <div id="tv-preventa" style="display:none">
-      <div class="card">
-        <div class="card-title">Nueva Pre-venta</div>
-        <div class="fg"><label class="flabel">Punto de Venta</label><select class="finput" id="pv-pdv">
-            <option value="">-- Seleccionar PDV --</option>
-          </select></div>
-        <div class="fg"><label class="flabel">Fecha de entrega</label><input type="date" class="finput" id="pv-fecha">
-        </div>
-        <div class="fg"><label class="flabel">Cantidad (sachet)</label><input type="number" class="finput" id="pv-qty"
-            placeholder="0" min="1"></div>
-        <div class="fg"><label class="flabel">Precio unitario (Bs.)</label><input type="number" class="finput"
-            id="pv-precio" placeholder="0.40" step="0.01"></div>
-        <div class="fg"><label class="flabel">Notas</label><textarea class="finput" id="pv-notas"
-            placeholder="Instrucciones especiales..." rows="2"></textarea></div>
-        <div
-          style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding:11px 13px;background:var(--bg3);border-radius:var(--r2)">
-          <span style="font-size:13px;color:var(--text2)">Total estimado</span>
-          <span style="font-size:18px;font-weight:700;font-family:var(--mono);color:var(--success)" id="pv-total">Bs.
-            0.00</span>
-        </div>
-        <button class="btn btn-water btn-full" onclick="savePreVenta()">💧 Confirmar Pre-venta</button>
-      </div>
-    </div>
 
-    <!-- TAB PEDIDOS -->
-    <div id="tv-pedidos" style="display:none">
-      <div class="tabs" style="margin-bottom:12px">
-        <div class="tab active" onclick="switchTab(this,'tp2-pend');renderPedidos('pendiente')">Pendientes</div>
-        <div class="tab" onclick="switchTab(this,'tp2-entreg');renderPedidos('entregado')">Entregados</div>
-      </div>
-      <div id="tp2-pend">
-        <div id="pedidos-list">
-          <div style="text-align:center;padding:24px;color:var(--text3);font-size:13px">Sin pedidos</div>
-        </div>
-      </div>
-      <div id="tp2-entreg" style="display:none">
-        <div id="pedidos-entregados-list">
-          <div style="text-align:center;padding:24px;color:var(--text3);font-size:13px">Sin pedidos entregados</div>
-        </div>
-      </div>
-    </div>
   </div>
 
   <!-- ===== PANTALLA 4: DASHBOARD ===== -->
@@ -3404,47 +3359,39 @@ create policy "open" on finanzas for all using (true) with check (true);`;
     // ============================================================
     function refreshPDVSelect() { ['pv-pdv'].forEach(id => { const el = EL(id); if (!el) return; el.innerHTML = '<option value="">-- Seleccionar PDV --</option>' + cache.pdvs.map(p => `<option value="${p.id}">${p.biz_name} (${p.owner_name})</option>`).join(''); }); }
 
-    // Live total preview pre-venta
-    EL('pv-qty')?.addEventListener('input', updatePVTotal);
-    EL('pv-precio')?.addEventListener('input', updatePVTotal);
-    function updatePVTotal() { const q = parseFloat(V('pv-qty')) || 0, p = parseFloat(V('pv-precio')) || 0; const t = EL('pv-total'); if (t) t.textContent = fmtBs(q * p); }
 
-    async function savePreVenta() {
-      const pdvId = V('pv-pdv'); if (!pdvId) return toast('Selecciona un PDV', true);
-      const qty = parseInt(V('pv-qty')) || 0; if (qty <= 0) return toast('Cantidad requerida', true);
-
-      const btn = EL('screen-ventas')?.querySelector('button[onclick="savePreVenta()"]');
-      if (btn && btn.disabled) return;
-      if (btn) btn.disabled = true;
-
-      const precio = parseFloat(V('pv-precio')) || 0.4;
-      const pdv = cache.pdvs.find(p => p.id == pdvId);
-      const record = { pdv_id: parseInt(pdvId), pdv_name: pdv.biz_name, qty, precio, total: qty * precio, notas: V('pv-notas'), fecha_entrega: V('pv-fecha'), status: 'pendiente' };
-      const saved = await dbInsert('ventas', record);
-      if (btn) btn.disabled = false;
-      if (!saved) return;
-
-      EL('pv-qty').value = ''; EL('pv-notas').value = ''; EL('pv-total').textContent = 'Bs. 0.00';
-      refreshDash(); renderPedidos('pendiente'); refreshStockTab();
-      toast('✓ Pre-venta guardada: ' + qty + ' sachet para ' + pdv.biz_name);
-    }
 
     function refreshVentasDia() {
       const dt = V('vd-fecha'); if (!dt) return;
       const ds = new Date(dt + 'T00:00:00').toDateString();
-      // ventas ENTREGADAS ese día (created_at o fecha_entrega)
-      const v = cache.ventas.filter(vt => { const byCreated = new Date(vt.created_at).toDateString() === ds; const byFecha = vt.fecha_entrega === dt; return (byCreated || byFecha) && vt.status === 'entregado'; });
-      const total = v.reduce((a, vt) => a + Number(vt.total) + Number(vt.total_boni || 0), 0);
-      const sachets = v.reduce((a, vt) => a + vt.qty, 0);
-      const boniTot = v.reduce((a, vt) => a + (vt.bonificacion || 0), 0);
-      const costoBoniTot = v.reduce((a, vt) => a + Number(vt.total_boni || 0), 0);
+      
+      let total = 0, sachets = 0, boniTot = 0, costoBoniTot = 0;
+      const pdvMap = {};
+
+      cache.ventas.forEach(vt => {
+        if (vt.status !== 'entregado') return;
+        const byCreated = new Date(vt.created_at).toDateString() === ds;
+        const byFecha = vt.fecha_entrega === dt;
+        if (!(byCreated || byFecha)) return;
+
+        total += Number(vt.total) + Number(vt.total_boni || 0);
+        sachets += vt.qty;
+        boniTot += (vt.bonificacion || 0);
+        costoBoniTot += Number(vt.total_boni || 0);
+
+        const k = vt.pdv_id || 'libre';
+        const nm = vt.pdv_name || 'Venta libre';
+        if (!pdvMap[k]) pdvMap[k] = { id: k, name: nm, sachets: 0, total: 0, ventas: [] };
+        pdvMap[k].sachets += vt.qty;
+        pdvMap[k].total += Number(vt.total);
+        pdvMap[k].ventas.push(vt);
+      });
+
       EL('vd-total').textContent = fmtBs(total); EL('vd-sachets').textContent = fmtNum(sachets);
       // Bonus summary in resumen tab
       const vdBoniEl = EL('vd-boni-resumen');
       if (vdBoniEl) vdBoniEl.innerHTML = boniTot > 0 ? `<div style="background:rgba(255,184,48,.08);border:1px solid rgba(255,184,48,.3);border-radius:9px;padding:10px;display:flex;gap:12px;margin-top:2px"><span style="font-size:20px">🎁</span><div><div style="font-size:13px;font-weight:800;color:var(--warn)">${fmtNum(boniTot)} sachet bonificados</div><div style="font-size:12px;color:var(--text2);font-family:var(--mono)">Costo bonificaciones: ${fmtBs(costoBoniTot)}</div></div></div>` : '';
-      // Agrupar por PDV
-      const pdvMap = {};
-      v.forEach(vt => { const k = vt.pdv_id || 'libre', nm = vt.pdv_name || 'Venta libre'; if (!pdvMap[k]) pdvMap[k] = { id: k, name: nm, sachets: 0, total: 0, ventas: [] }; pdvMap[k].sachets += vt.qty; pdvMap[k].total += Number(vt.total); pdvMap[k].ventas.push(vt); });
+      
       const list = Object.values(pdvMap).sort((a, b) => b.total - a.total);
       const maxT = list[0]?.total || 1;
       const cont = EL('vd-list');
@@ -3503,30 +3450,7 @@ create policy "open" on finanzas for all using (true) with check (true);`;
       openModal('modal-pdv-detail');
     }
 
-    function renderPedidos(status) {
-      const listId = status === 'pendiente' ? 'pedidos-list' : 'pedidos-entregados-list';
-      const el = EL(listId); if (!el) return;
-      const items = cache.ventas.filter(v => v.status === status).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-      if (!items.length) { el.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text3);font-size:13px">Sin pedidos</div>'; return; }
-      el.innerHTML = items.map(v => `<div class="card" style="margin-bottom:10px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-      <div><div style="font-weight:800;font-size:14px">${v.pdv_name || 'Venta libre'}</div><div style="font-size:11px;color:var(--text2);font-family:var(--mono)">Entrega: ${v.fecha_entrega || 'Sin fecha'} · ${locDate(v.created_at)}</div></div>
-      <span class="badge ${status === 'entregado' ? 'b-green' : 'b-warn'}">${status}</span>
-    </div>
-    <div style="display:flex;justify-content:space-between;align-items:center;background:var(--bg3);border-radius:var(--r2);padding:10px">
-      <div style="font-size:13px;color:var(--text2)"><span style="font-size:18px;font-weight:800;color:var(--accent);font-family:var(--mono)">${fmtNum(v.qty)}</span> sachet</div>
-      <div style="font-size:18px;font-weight:800;color:var(--success);font-family:var(--mono)">${fmtBs(v.total)}</div>
-    </div>
-    ${v.notas ? `<div style="font-size:12px;color:var(--text2);margin-top:8px;padding:8px;background:var(--bg3);border-radius:6px">📝 ${v.notas}</div>` : ''}
-    ${status === 'pendiente' ? `<button class="btn btn-water btn-full" style="margin-top:10px" onclick="marcarEntregado(${v.id})">✓ Marcar como entregado</button>` : ''}
-  </div>`).join('');
-    }
 
-    async function marcarEntregado(id) {
-      await dbUpdate('ventas', id, { status: 'entregado' });
-      renderPedidos('pendiente'); renderPedidos('entregado'); refreshDash(); refreshStockTab();
-      toast('✓ Pedido marcado como entregado');
-    }
 
 
 
