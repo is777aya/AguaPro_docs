@@ -4773,12 +4773,14 @@ create policy "open" on finanzas for all using (true) with check (true);`;
       ['vd-fecha', 'p-hist-date', 'pv-fecha', 'rh-fecha', 'p-fecha', 'perd-fecha', 'perd-hist-date'].forEach(id => { const e = EL(id); if (e) e.value = today2; });
       const url = LS('sb_url'), key = LS('sb_key');
       if (url && key) {
-        EL('cfg-url').value = url; EL('cfg-key').value = key;
+        const uEl = EL('cfg-url'); if(uEl) uEl.value = url;
+        const kEl = EL('cfg-key'); if(kEl) kEl.value = key;
         // Connect to Supabase first, then show login
         await connectSB(url, key); // true = showLogin after connect
       } else {
         // Show setup first
-        EL('setup-screen').style.display = 'flex';
+        const s = EL('setup-screen');
+        if (s) s.style.display = 'flex';
       }
     })();
   </script>
